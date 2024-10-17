@@ -4,42 +4,21 @@ namespace ConsolePortScanner
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             int maxDepth = 0;
             long length = 0;
 
-            using (var archive = ZipFile.OpenRead("E:\\main.zip"))
+            using (var archiveStream = new FileStream("E:\\main.zip", FileMode.Open, FileAccess.Read))
             {
-                var archEntries = archive.Entries.Where(x => x.Length > 0).ToList();
+                maxDepth = GetMaxZipDepthAndSizeData(archiveStream, ref length);
+            }
 
-                foreach (var item in archEntries)
-                {
-                    int currentDepth = GetDepth(item.FullName);
-
-                    if (item.FullName.EndsWith(".zip"))
-                    {
-                        var stream = item.Open();
-                        currentDepth += Arj(stream, ref length) + 1;
-                    }
-                    else
-                    {
-                        length += item.Length;
-                    }
-
-                    if (currentDepth > maxDepth)
-                    {
-                        maxDepth = currentDepth;
-                    }
-                }
-
-                Console.WriteLine($"Максимальный уровень вложенности: {maxDepth}");
-                Console.WriteLine($"Предпологаемый размер данных: {FormatSize(length)}");
-
-            };
+            Console.WriteLine($"Максимальный уровень вложенности: {maxDepth}");
+            Console.WriteLine($"Предпологаемый размер данных: {FormatSize(length)}");
         }
 
-        private static int Arj(Stream stream, ref long length)
+        private static int GetMaxZipDepthAndSizeData(Stream stream, ref long length)
         {
             int currentMaxDepth = 0;
 
@@ -52,7 +31,7 @@ namespace ConsolePortScanner
                     if (item.FullName.EndsWith(".zip"))
                     {
                         var innerStream = item.Open();
-                        currentDepth += Arj(innerStream, ref length) + 1;
+                        currentDepth += GetMaxZipDepthAndSizeData(innerStream, ref length) + 1;
                     }
                     else
                     {
