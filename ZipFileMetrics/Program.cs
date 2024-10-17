@@ -1,10 +1,10 @@
 ﻿using System.IO.Compression;
 
-namespace ConsolePortScanner
+namespace ZipFileMetrics
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             int maxDepth = 0;
             long length = 0;
