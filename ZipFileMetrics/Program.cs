@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System.Diagnostics;
+using System.IO.Compression;
 
 namespace ZipFileMetrics
 {
@@ -8,6 +9,9 @@ namespace ZipFileMetrics
         {
             int maxDepth = 0; // Максимальный уровень вложенности ZIP-архивов.
             long length = 0;  // Общий размер данных в байтах.
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             // Открываем ZIP-архив для чтения.
             using (var archiveStream = new FileStream("E:\\main.zip", FileMode.Open, FileAccess.Read))
@@ -25,6 +29,9 @@ namespace ZipFileMetrics
                 Console.WriteLine($"Максимальный уровень вложенности: {maxDepth}");
                 Console.WriteLine($"Предполагаемый размер данных: {FormatSize(length)}");
             }
+
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
         }
 
         /// <summary>
