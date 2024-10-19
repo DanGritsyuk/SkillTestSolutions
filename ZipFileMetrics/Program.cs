@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System.Diagnostics;
+using System.IO.Compression;
 
 namespace ZipFileMetrics
 {
@@ -6,6 +7,8 @@ namespace ZipFileMetrics
     {
         static async Task Main(string[] args)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             var zipProcessor = new ZipProcessor("E:\\main.zip");
             try
             {
@@ -17,6 +20,9 @@ namespace ZipFileMetrics
             {
                 Console.WriteLine(ex);
             }
+
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds);
         }
     }
 
