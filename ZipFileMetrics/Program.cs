@@ -1,21 +1,22 @@
 ﻿using System.IO.Compression;
+using System.Threading;
 
 namespace ZipFileMetrics
 {
     class Program
     {
-        static void Main(string[] args)
-        {
-            int maxDepth = 0; // Максимальный уровень вложенности ZIP-архивов.
-            long length = 0;  // Общий размер данных в байтах.
+        private static int maxDepth = 0; // Максимальный уровень вложенности ZIP-архивов.
+        private static long length = 0;  // Общий размер данных в байтах.
+        private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
+        static async Task Main(string[] args)
+        {
             // Открываем ZIP-архив для чтения.
             using (var archiveStream = new FileStream("E:\\main.zip", FileMode.Open, FileAccess.Read))
             {
                 try
                 {
-                    // Получаем максимальный уровень вложенности и общий размер данных.
-                    maxDepth = GetMaxZipDepthAndSizeData(archiveStream, ref length);
+                    await CalcSizeDataAndMaxZipDepthAsync(archiveStream, 0);
                 }
                 catch (Exception ex)
                 {
@@ -27,22 +28,14 @@ namespace ZipFileMetrics
             }
         }
 
-        /// <summary>
-        /// Рекурсивно определяет максимальный уровень вложенности ZIP-архивов и суммирует размеры файлов.
-        /// </summary>
-        /// <param name="stream">Поток ZIP-архива.</param>
-        /// <param name="length">Ссылка на переменную, хранящую общий размер данных.</param>
-        /// <returns>Максимальный уровень вложенности архивов.</returns>
-        private static int GetMaxZipDepthAndSizeData(Stream stream, ref long length)
+        private static async Task CalcSizeDataAndMaxZipDepthAsync(Stream stream, int thisZipDepth)
         {
-            int currentMaxDepth = 0; // Текущий максимальный уровень вложенности.
-
             using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 // Перебираем все элементы в архиве.
-                foreach (var item in zip.Entries)
+                await foreach (var item in zip.GetEntriesAsync())
                 {
-                    int currentDepth = GetDepth(item.FullName); // Определяем уровень вложенности текущего элемента.
+                    int currentDepth = thisZipDepth + GetDepth(item.FullName); // Определяем уровень вложенности текущего элемента.
 
                     // Если элемент является ZIP-архивом, рекурсивно обрабатываем его.
                     if (item.FullName.EndsWith(".zip"))
@@ -52,7 +45,7 @@ namespace ZipFileMetrics
                         {
                             using (var innerStream = item.Open())
                             {
-                                currentDepth += GetMaxZipDepthAndSizeData(innerStream, ref length) + 1; // "+ 1" Добавляем вложеность самого архива
+                                CalcSizeDataAndMaxZipDepthAsync(innerStream, currentDepth + 1); // "+ 1" Добавляем вложеность самого архива
                             }
                         }
                         catch (Exception ex)
@@ -63,18 +56,28 @@ namespace ZipFileMetrics
                     }
                     else
                     {
-                        // Увеличиваем общий размер данных на размер текущего файла.
-                        length += item.Length;
-                    }
+                        await semaphore.WaitAsync();
+                        try
+                        {
+                            // Увеличиваем общий размер данных на размер текущего файла.
+                            length += item.Length;
 
-                    if (currentDepth > currentMaxDepth)
-                    {
-                        currentMaxDepth = currentDepth;
+                            if (currentDepth > maxDepth)
+                            {
+
+                                if (currentDepth > maxDepth) // двойная проверка
+                                {
+                                    maxDepth = currentDepth;
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
                     }
                 }
             }
-
-            return currentMaxDepth; // Возвращаем максимальный уровень вложенности.
         }
 
         /// <summary>
@@ -100,5 +103,18 @@ namespace ZipFileMetrics
         }
 
         private static int GetDepth(string fullName) => fullName.Split('/').Length - 1;
+    }
+
+    public static class ZipArchiveExtensions
+    {
+        public static async IAsyncEnumerable<ZipArchiveEntry> GetEntriesAsync(this ZipArchive zip)
+        {
+            foreach (var entry in zip.Entries)
+            {
+                // Симуляция асинхронной операции, если это необходимо
+                await Task.Yield(); // Это просто для демонстрации
+                yield return entry;
+            }
+        }
     }
 }
