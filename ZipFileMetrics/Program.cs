@@ -1,74 +1,80 @@
 ﻿using System.IO.Compression;
-using System.Threading;
 
 namespace ZipFileMetrics
 {
     class Program
     {
-        private static int maxDepth = 0; // Максимальный уровень вложенности ZIP-архивов.
-        private static long length = 0;  // Общий размер данных в байтах.
-        private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-
         static async Task Main(string[] args)
         {
-            // Открываем ZIP-архив для чтения.
-            using (var archiveStream = new FileStream("E:\\main.zip", FileMode.Open, FileAccess.Read))
+            var zipProcessor = new ZipProcessor("E:\\main.zip");
+            try
             {
-                try
-                {
-                    await CalcSizeDataAndMaxZipDepthAsync(archiveStream, 0);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                }
+                await zipProcessor.ProcessArchiveAsync();
+                Console.WriteLine($"Максимальный уровень вложенности: {zipProcessor.MaxDepth}");
+                Console.WriteLine($"Предполагаемый размер данных: {SizeFormatter.FormatSize(zipProcessor.TotalSize)}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+    }
 
-                Console.WriteLine($"Максимальный уровень вложенности: {maxDepth}");
-                Console.WriteLine($"Предполагаемый размер данных: {FormatSize(length)}");
+    // Класс для обработки ZIP-файлов
+    public class ZipProcessor
+    {
+        private readonly string _filePath;
+        private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+
+        public ZipProcessor(string filePath)
+        {
+            _filePath = filePath;
+        }
+
+        public int MaxDepth { get; private set; } = 0;   // Максимальная глубина вложенности
+        public long TotalSize { get; private set; } = 0; // Общий размер файлов
+
+        public async Task ProcessArchiveAsync()
+        {
+            using (var archiveStream = new FileStream(_filePath, FileMode.Open, FileAccess.Read))
+            {
+                await ProcessZipStreamAsync(archiveStream, 0);
             }
         }
 
-        private static async Task CalcSizeDataAndMaxZipDepthAsync(Stream stream, int thisZipDepth)
+        private async Task ProcessZipStreamAsync(Stream stream, int currentDepth)
         {
             using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
             {
-                // Перебираем все элементы в архиве.
-                await foreach (var item in zip.GetEntriesAsync())
+                await foreach (var entry in zip.GetEntriesAsync())
                 {
-                    int currentDepth = thisZipDepth + GetDepth(item.FullName); // Определяем уровень вложенности текущего элемента.
+                    int entryDepth = currentDepth + GetEntryDepth(entry.FullName); // Вычисляем глубину текущего элемента
 
-                    // Если элемент является ZIP-архивом, рекурсивно обрабатываем его.
-                    if (item.FullName.EndsWith(".zip"))
+                    if (entry.FullName.EndsWith(".zip"))
                     {
-
+                        // Рекурсивно обрабатываем вложенный архив
                         try
                         {
-                            using (var innerStream = item.Open())
+                            using (var innerStream = entry.Open())
                             {
-                                CalcSizeDataAndMaxZipDepthAsync(innerStream, currentDepth + 1); // "+ 1" Добавляем вложеность самого архива
+                                ProcessZipStreamAsync(innerStream, entryDepth + 1); // Увеличиваем глубину архива
                             }
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception($"Ошибка при обработке архива {item.FullName}: {ex.Message}");
+                            throw new Exception($"Ошибка при обработке архива {entry.FullName}: {ex.Message}");
                         }
-
                     }
                     else
                     {
                         await semaphore.WaitAsync();
                         try
                         {
-                            // Увеличиваем общий размер данных на размер текущего файла.
-                            length += item.Length;
-
-                            if (currentDepth > maxDepth)
+                            // Увеличиваем общий размер данных и обновляем максимальную глубину
+                            TotalSize += entry.Length;
+                            if (entryDepth > MaxDepth)
                             {
-
-                                if (currentDepth > maxDepth) // двойная проверка
-                                {
-                                    maxDepth = currentDepth;
-                                }
+                                MaxDepth = entryDepth;
                             }
                         }
                         finally
@@ -80,39 +86,39 @@ namespace ZipFileMetrics
             }
         }
 
-        /// <summary>
-        /// Форматирует размер в байтах в удобочитаемый вид с единицами измерения.
-        /// </summary>
-        private static string FormatSize(long bytes)
+        public static int GetEntryDepth(string fullName) => fullName.Split('/').Length - 1;
+    }
+
+    // Вспомогательный класс для форматирования размера
+    public static class SizeFormatter
+    {
+        public static string FormatSize(long bytes)
         {
             if (bytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(bytes), "Size cannot be negative.");
+                throw new ArgumentOutOfRangeException(nameof(bytes), "Размер не может быть отрицательным.");
 
             string[] sizeUnits = { "байт", "килобайт", "мегабайт", "гигабайт", "терабайт" };
             double size = bytes;
             int unitIndex = 0;
 
-            // Определяем подходящую единицу измерения.
             while (size >= 1024 && unitIndex < sizeUnits.Length - 1)
             {
                 size /= 1024;
                 unitIndex++;
             }
 
-            return $"{Math.Round(size, 1)} {sizeUnits[unitIndex]}"; // Возвращаем отформатированный размер.
+            return $"{Math.Round(size, 1)} {sizeUnits[unitIndex]}";
         }
-
-        private static int GetDepth(string fullName) => fullName.Split('/').Length - 1;
     }
 
+    // Асинхронное расширение для обработки ZIP-архивов
     public static class ZipArchiveExtensions
     {
         public static async IAsyncEnumerable<ZipArchiveEntry> GetEntriesAsync(this ZipArchive zip)
         {
             foreach (var entry in zip.Entries)
             {
-                // Симуляция асинхронной операции, если это необходимо
-                await Task.Yield(); // Это просто для демонстрации
+                await Task.Yield(); // Симуляция асинхронной операции, если это необходимо
                 yield return entry;
             }
         }
