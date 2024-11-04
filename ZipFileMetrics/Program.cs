@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO.Compression;
+using System.Threading.Tasks;
 
 namespace ZipFileMetrics
 {
@@ -13,8 +15,8 @@ namespace ZipFileMetrics
             try
             {
                 await zipProcessor.ProcessArchiveAsync();
-                Console.WriteLine($"Максимальный уровень вложенности: {zipProcessor.MaxDepth}");
-                Console.WriteLine($"Предполагаемый размер данных: {SizeFormatter.FormatSize(zipProcessor.TotalSize)}");
+                Console.WriteLine($"Максимальный уровень вложенности: {zipProcessor.MaxNestingLevel}");
+                Console.WriteLine($"Предполагаемый размер данных: {SizeFormatter.FormatSize(zipProcessor.TotalFileSize)}");
             }
             catch (Exception ex)
             {
@@ -26,76 +28,112 @@ namespace ZipFileMetrics
         }
     }
 
-    // Класс для обработки ZIP-файлов
     public class ZipProcessor
     {
-        private readonly string _filePath;
-        private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+        private readonly string _archivePath;
 
-        public ZipProcessor(string filePath)
+        private ConcurrentQueue<Task> _processingTasks;
+        private ConcurrentQueue<long> _fileSizesQueue;
+        private ConcurrentQueue<int> _nestingLevelsQueue;
+
+        private bool _isProcessingZip;
+        private bool _isCalculating;
+
+        public ZipProcessor(string archivePath)
         {
-            _filePath = filePath;
+            _archivePath = archivePath;
+            _processingTasks = new();
+            _fileSizesQueue = new();
+            _nestingLevelsQueue = new();
+            _isProcessingZip = false;
+            _isCalculating = false;
         }
 
-        public int MaxDepth { get; private set; } = 0;   // Максимальная глубина вложенности
-        public long TotalSize { get; private set; } = 0; // Общий размер файлов
+        public int MaxNestingLevel { get; private set; } = 0;   // Максимальный уровень вложенности архивов
+        public long TotalFileSize { get; private set; } = 0;    // Общий размер всех файлов
 
         public async Task ProcessArchiveAsync()
         {
-            using (var archiveStream = new FileStream(_filePath, FileMode.Open, FileAccess.Read))
+            using (var archiveStream = new FileStream(_archivePath, FileMode.Open, FileAccess.Read))
             {
-                await ProcessZipStreamAsync(archiveStream, 0);
+                Task? calculationTask = null;
+
+                _processingTasks.Enqueue(ProcessZipStreamAsync(archiveStream, 0));
+                _isProcessingZip = true;
+
+                calculationTask = Task.Run(CalculateMetrics);
+                _isCalculating = true;
+
+                await AwaitAllZipProcesses();
+                _isCalculating = false;
+                await calculationTask;
             }
         }
 
-        private async Task ProcessZipStreamAsync(Stream stream, int currentDepth)
+        private async Task ProcessZipStreamAsync(Stream stream, int currentNestingLevel)
         {
+            bool containsInnerZip = false;
+            int maxDepthInCurrentZip = 0;
+
             using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 await foreach (var entry in zip.GetEntriesAsync())
                 {
-                    int entryDepth = currentDepth + GetEntryDepth(entry.FullName); // Вычисляем глубину текущего элемента
+                    int entryNestingLevel = currentNestingLevel + GetEntryDepth(entry.FullName);
 
                     if (entry.FullName.EndsWith(".zip"))
                     {
-                        // Рекурсивно обрабатываем вложенный архив
                         try
                         {
                             using (var innerStream = entry.Open())
                             {
-                                ProcessZipStreamAsync(innerStream, entryDepth + 1); // Увеличиваем глубину архива
+                                _processingTasks.Enqueue(ProcessZipStreamAsync(innerStream, entryNestingLevel + 1));
+                                containsInnerZip = true;
                             }
                         }
                         catch (Exception ex)
                         {
+                            Console.WriteLine($"Ошибка при обработке архива {entry.FullName}: {ex.Message}");
                             throw new Exception($"Ошибка при обработке архива {entry.FullName}: {ex.Message}");
                         }
                     }
                     else
                     {
-                        await semaphore.WaitAsync();
-                        try
+                        _fileSizesQueue.Enqueue(entry.Length);
+                        if (entryNestingLevel > maxDepthInCurrentZip)
                         {
-                            // Увеличиваем общий размер данных и обновляем максимальную глубину
-                            TotalSize += entry.Length;
-                            if (entryDepth > MaxDepth)
-                            {
-                                MaxDepth = entryDepth;
-                            }
-                        }
-                        finally
-                        {
-                            semaphore.Release();
+                            maxDepthInCurrentZip = entryNestingLevel;
                         }
                     }
                 }
             }
+            _nestingLevelsQueue.Enqueue(maxDepthInCurrentZip);
         }
 
-        public static int GetEntryDepth(string fullName) => fullName.Split('/').Length - 1;
+        private void CalculateMetrics()
+        {
+            while (_isCalculating || (_fileSizesQueue.Count > 0 && _nestingLevelsQueue.Count > 0))
+            {
+                if (_fileSizesQueue.TryDequeue(out long fileSize))
+                    TotalFileSize += fileSize;
+
+                if (_nestingLevelsQueue.TryDequeue(out int nestingLevel))
+                    MaxNestingLevel = Math.Max(MaxNestingLevel, nestingLevel);
+            }
+        }
+
+        private async Task AwaitAllZipProcesses()
+        {
+            while (_isProcessingZip || _processingTasks.Count > 0)
+            {
+                if (_processingTasks.TryDequeue(out Task? task))
+                    await task!;
+            }
+        }
+
+        private static int GetEntryDepth(string fullName) => fullName.Split('/').Length - 1;
     }
 
-    // Вспомогательный класс для форматирования размера
     public static class SizeFormatter
     {
         public static string FormatSize(long bytes)
@@ -117,14 +155,13 @@ namespace ZipFileMetrics
         }
     }
 
-    // Асинхронное расширение для обработки ZIP-архивов
     public static class ZipArchiveExtensions
     {
         public static async IAsyncEnumerable<ZipArchiveEntry> GetEntriesAsync(this ZipArchive zip)
         {
             foreach (var entry in zip.Entries)
             {
-                await Task.Yield(); // Симуляция асинхронной операции, если это необходимо
+                await Task.Yield();
                 yield return entry;
             }
         }
