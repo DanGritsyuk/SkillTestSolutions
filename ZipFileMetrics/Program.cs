@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Threading.Tasks;
 
 namespace ZipFileMetrics
 {
@@ -72,7 +71,6 @@ namespace ZipFileMetrics
 
         private async Task ProcessZipStreamAsync(Stream stream, int currentNestingLevel)
         {
-            bool containsInnerZip = false;
             int maxDepthInCurrentZip = 0;
 
             using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
@@ -88,12 +86,10 @@ namespace ZipFileMetrics
                             using (var innerStream = entry.Open())
                             {
                                 _processingTasks.Enqueue(ProcessZipStreamAsync(innerStream, entryNestingLevel + 1));
-                                containsInnerZip = true;
                             }
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Ошибка при обработке архива {entry.FullName}: {ex.Message}");
                             throw new Exception($"Ошибка при обработке архива {entry.FullName}: {ex.Message}");
                         }
                     }
