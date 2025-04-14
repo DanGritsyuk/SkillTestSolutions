@@ -6,7 +6,7 @@ using StringCompressor.DAL.Repository.Contracts;
 
 namespace StringCompressor.ConsoleApp.Extensions
 {
-    internal static class DIExtensions
+    internal static class DIExtension
     {
         internal static IServiceCollection ConfigureServices(this IServiceCollection services)
         {
