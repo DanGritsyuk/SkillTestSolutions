@@ -1,0 +1,27 @@
+<div class="about-container">
+  <h1>О проекте CompanyDirectory</h1>
+
+  <section class="tech-section">
+    <h2>Используемые технологии</h2>
+    <div class="tech-grid">
+      <div class="tech-card" *ngFor="let tech of technologies">
+        <h3>{{ tech.name }}</h3>
+        <p>{{ tech.value }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section">
+    <h2>Основные функции</h2>
+    <div class="features-grid">
+      <div class="feature-card" *ngFor="let feature of features">
+        <h3>{{ feature.title }}</h3>
+        <p>{{ feature.description }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="navigation-hint">
+    <p>Используйте навигационное меню выше для перехода между разделами</p>
+  </section>
+</div>

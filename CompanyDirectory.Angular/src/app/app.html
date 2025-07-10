@@ -1,0 +1,21 @@
+<nav class="navbar">
+  <ul class="nav-list">
+    <li class="nav-item">
+      <a routerLink="/about"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{ exact: true }">
+        О компании
+      </a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="/employees"
+         routerLinkActive="active">
+        Сотрудники
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<main class="content">
+  <router-outlet></router-outlet>
+</main>
