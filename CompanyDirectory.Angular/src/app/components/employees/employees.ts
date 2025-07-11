@@ -1,111 +1,111 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { EmployeeService } from '../../services/employee.service';
+import { Component, OnInit } from '@angular/core';
 import { Employee } from '../../models/employee.model';
-import { EmployeeEditDialog } from './employee-edit-dialog/employee-edit-dialog';
-import { ConfirmDialog } from '../shared/confirm-dialog/confirm-dialog';
-import { DepartmentService } from '../../services/department.service';
-import { Department } from '../../models/department.model';
-import { CommonModule } from '@angular/common';
+import { EmployeeService } from '../../services/employee.service';
+import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { EmployeeEditDialog } from '../employees/employee-edit-dialog/employee-edit-dialog';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
 
 @Component({
   selector: 'app-employees',
   standalone: true,
-  templateUrl: './employees.html',
-  styleUrls: ['./employees.css'],
   imports: [
     CommonModule,
     MatTableModule,
-    MatSortModule,
-    MatDialogModule,
+    DatePipe,
+    DecimalPipe,
     MatButtonModule,
     MatIconModule,
-    EmployeeEditDialog,
-    ConfirmDialog
+    MatDialogModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatSelectModule,
+    EmployeeEditDialog
   ],
+  templateUrl: './employees.html',
 })
 export class EmployeesComponent implements OnInit {
-  displayedColumns: string[] = [
-    'department',
-    'fullName',
-    'birthDate',
-    'hireDate',
-    'salary',
-    'actions'
-  ];
-
-  dataSource = new MatTableDataSource<Employee>();
-  departments: Department[] = [];
-
-  @ViewChild(MatSort) sort!: MatSort;
+  employees: Employee[] = [];
 
   constructor(
-    private employeeService: EmployeeService,
-    private departmentService: DepartmentService,
+    public employeeService: EmployeeService,
     private dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
     this.loadEmployees();
-    this.loadDepartments();
   }
 
   loadEmployees(): void {
-    this.employeeService.getAll().subscribe(employees => {
-      this.dataSource.data = employees;
-      this.dataSource.sort = this.sort;
+    this.employeeService.getAll().subscribe({
+      next: (employees: Employee[]) => this.employees = employees,
+      error: (err: any) => console.error('Ошибка при загрузке сотрудников:', err)
     });
   }
 
-  loadDepartments(): void {
-    this.departmentService.getAll().subscribe(departments => {
-      this.departments = departments;
+  getHighSalary(): void {
+    this.employeeService.getHighSalary().subscribe({
+      next: (employees: Employee[]) => this.employees = employees,
+      error: (err: any) => console.error('Ошибка при получении высоких зарплат:', err)
     });
   }
 
-  openEditDialog(employee?: Employee): void {
+  deleteRetired(): void {
+    this.employeeService.deleteRetired().subscribe({
+      next: () => this.loadEmployees(),
+      error: (err: any) => console.error('Ошибка при удалении пенсионеров:', err)
+    });
+  }
+
+  adjustSalaries(): void {
+    this.employeeService.adjustSalaries().subscribe({
+      next: () => this.loadEmployees(),
+      error: (err: any) => console.error('Ошибка при повышении зарплат:', err)
+    });
+  }
+
+  openAddDialog(): void {
     const dialogRef = this.dialog.open(EmployeeEditDialog, {
-      width: '600px',
-      data: {
-        employee: employee || null,
-        departments: this.departments
-      }
+      width: '400px',
+      data: { mode: 'add' }
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) this.loadEmployees();
-    });
-  }
-
-  deleteEmployee(id: number): void {
-    const dialogRef = this.dialog.open(ConfirmDialog, {
-      data: {
-        title: 'Удаление сотрудника',
-        message: 'Вы уверены, что хотите удалить этого сотрудника?'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.employeeService.delete(id).subscribe(() => {
-          this.loadEmployees();
-        });
+      if (result === 'updated') {
+        this.loadEmployees();
       }
     });
   }
 
-  applyFilter(event: Event, column: string): void {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filterPredicate = (data: Employee, filter: string) => {
-      const columnValue = column === 'department'
-        ? data.department?.name
-        : (data as any)[column];
-      return columnValue.toString().toLowerCase().includes(filter.toLowerCase());
-    };
-    this.dataSource.filter = filterValue.trim().toLowerCase();
+  openEditDialog(employee: Employee): void {
+    const dialogRef = this.dialog.open(EmployeeEditDialog, {
+      width: '400px',
+      data: { mode: 'edit', employee }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'updated') {
+        this.loadEmployees();
+      }
+    });
+  }
+
+  deleteEmployee(employee: Employee): void {
+    if (confirm(`Удалить сотрудника ${employee.fullName}?`)) {
+      this.employeeService.delete(employee.id!).subscribe(() => {
+        this.loadEmployees();
+      });
+    }
   }
 }

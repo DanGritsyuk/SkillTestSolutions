@@ -5,9 +5,9 @@ import { Employee } from '../models/employee.model';
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
-  private apiUrl = 'api/employees';
+  public apiUrl = 'api/employees';
 
-  constructor(private http: HttpClient) { }
+  constructor(public http: HttpClient) { }
 
   // Получение всех сотрудников
   getAll(): Observable<Employee[]> {
