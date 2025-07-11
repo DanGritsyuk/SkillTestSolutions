@@ -1,23 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Routes } from '@angular/router';
+import { AboutCompanyComponent } from './about-company';
+import { EmployeesComponent } from '../employees/employees';
 
-import { AboutCompany } from './about-company';
-
-describe('AboutCompany', () => {
-  let component: AboutCompany;
-  let fixture: ComponentFixture<AboutCompany>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [AboutCompany]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(AboutCompany);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
+export const routes: Routes = [
+  {
+    path: '',
+    redirectTo: 'about',
+    pathMatch: 'full'
+  },
+  {
+    path: 'about',
+    title: 'О компании',
+    component: AboutCompanyComponent
+  },
+  {
+    path: 'employees',
+    title: 'Сотрудники',
+    component: EmployeesComponent
+  }
+];

@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
+import { NgFor } from '@angular/common';
 
 @Component({
   selector: 'app-about-company',
+  standalone: true, // ✅ добавлено
+  imports: [NgFor],  // ✅ обязательно указать все зависимости
   templateUrl: './about-company.html',
   styleUrls: ['./about-company.css']
 })
