@@ -1,0 +1,6 @@
+@NexusStock.WebAPI_HostAddress = http://localhost:5008
+
+GET {{NexusStock.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

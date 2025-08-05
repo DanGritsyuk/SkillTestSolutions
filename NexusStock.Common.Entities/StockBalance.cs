@@ -1,0 +1,13 @@
+﻿namespace NexusStock.Common.Entities
+{
+    public class StockBalance
+    {
+        public int Id { get; set; }
+        public int ResourceId { get; set; }
+        public int UnitId { get; set; }
+        public decimal Quantity { get; set; }
+
+        public Resource Resource { get; set; }
+        public Unit Unit { get; set; }
+    }
+}
