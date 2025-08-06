@@ -90,6 +90,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var resource = _mapper.Map<Resource>(request);
+                resource.Id = id;
                 await _resourceLogic.UpdateResourceAsync(resource);
                 return NoContent();
             }

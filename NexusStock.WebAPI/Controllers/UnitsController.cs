@@ -95,6 +95,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var unit = _mapper.Map<Unit>(request);
+                unit.Id = id;
                 await _unitLogic.UpdateUnitAsync(unit);
 
                 return NoContent();

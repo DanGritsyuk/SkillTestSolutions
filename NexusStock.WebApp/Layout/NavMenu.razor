@@ -1,0 +1,35 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Управление складом</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="@(() => ToggleNavMenu.InvokeAsync(null))">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <h4 style="color:white">Склад</h4>
+            <NavLink href="/balances" class="nav-link" activeClass="active">Баланс</NavLink>
+            <NavLink href="/receipts" class="nav-link" activeClass="active">Поступления</NavLink>
+            <NavLink href="/shipments" class="nav-link" activeClass="active">Отгрузки</NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <h4 style="color:white">Справочники</h4>
+            <NavLink href="/clients/1" class="nav-link" activeClass="active">Клиенты</NavLink>
+            <NavLink href="/units/1" class="nav-link" activeClass="active">Единицы измерения</NavLink>
+            <NavLink href="/resources/1" class="nav-link" activeClass="active">Ресурсы</NavLink>
+        </div>
+    </nav>
+
+</div>
+
+@code {
+    [Parameter] public EventCallback ToggleNavMenu { get; set; }
+
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+}

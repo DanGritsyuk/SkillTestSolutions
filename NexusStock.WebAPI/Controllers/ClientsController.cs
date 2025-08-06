@@ -90,6 +90,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var client = _mapper.Map<Client>(request);
+                client.Id = id;
                 await _clientLogic.UpdateClientAsync(client);
                 return NoContent();
             }

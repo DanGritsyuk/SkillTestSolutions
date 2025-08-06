@@ -123,11 +123,11 @@ namespace NexusStock.BLL.Logic
 
         private async Task ValidateResourceNameUniqueness(string name, int? excludeId = null)
         {
-            bool nameExists = excludeId.HasValue
-                ? await _unitOfWork.Resources.IsNameUniqueAsync(name, excludeId.Value)
-                : await _unitOfWork.Resources.IsNameUniqueAsync(name);
+            bool nameUnique = excludeId.HasValue
+               ? await _unitOfWork.Resources.IsNameUniqueAsync(name, excludeId.Value)
+               : await _unitOfWork.Resources.IsNameUniqueAsync(name);
 
-            if (!nameExists)
+            if (!nameUnique)
                 throw new Exception("Ресурс с таким именем уже существует");
         }
 

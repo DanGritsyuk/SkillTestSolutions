@@ -2,7 +2,6 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using NexusStock.DAL.Repository;
 using NexusStock.WebAPI.Extensions;
-using Microsoft.Extensions.DependencyInjection;
 using NexusStock.WebAPI.Mapping;
 
 namespace NexusStock.WebAPI
@@ -17,7 +16,6 @@ namespace NexusStock.WebAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Регистрация AutoMapper через стандартный метод
             builder.Services.AddAutoMapper(cfg => { }, typeof(ClientProfile).Assembly);
 
             builder.Services.ConfigureDALDependencies();
@@ -27,7 +25,20 @@ namespace NexusStock.WebAPI
             builder.Services.AddDbContext<NexusStockDbContext>(options =>
                 options.UseNpgsql(connection));
 
+            var allowedOrigin = builder.Configuration.GetSection("CorsSettings")["AllowedOrigin"];
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowBlazorClient",
+                    policy => policy
+                        .WithOrigins(allowedOrigin)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod());
+            });
+
             var app = builder.Build();
+
+            app.UseCors("AllowBlazorClient");
 
             if (app.Environment.IsDevelopment())
             {
