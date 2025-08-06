@@ -31,7 +31,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var resources = includeArchived
-                    ? await _resourceLogic.GetAllResourcesAsync()
+                    ? await _resourceLogic.GetAllArchiveResourcesAsync()
                     : await _resourceLogic.GetAllActiveResourcesAsync();
 
                 return Ok(_mapper.Map<IEnumerable<ResourceResponse>>(resources));

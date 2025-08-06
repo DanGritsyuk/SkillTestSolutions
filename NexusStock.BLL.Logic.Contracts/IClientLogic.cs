@@ -6,6 +6,7 @@ namespace NexusStock.BLL.Logic.Contracts
     {
         Task<IEnumerable<Client>> GetAllClientsAsync();
         Task<IEnumerable<Client>> GetAllActiveClientsAsync();
+        Task<IEnumerable<Client>> GetAllArchiveClientsAsync();
         Task<Client> GetClientByIdAsync(int id);
         Task CreateClientAsync(Client client);
         Task UpdateClientAsync(Client client);

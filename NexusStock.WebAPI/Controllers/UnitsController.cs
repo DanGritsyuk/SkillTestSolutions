@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using NexusStock.BLL.Logic;
 using NexusStock.BLL.Logic.Contracts;
 using NexusStock.Common.Entities;
 using NexusStock.WebAPI.DTOs.Unit;
 using System.ComponentModel.DataAnnotations;
-using AutoMapper;
 
 namespace NexusStock.WebAPI.Controllers
 {
@@ -25,17 +26,14 @@ namespace NexusStock.WebAPI.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet("get_all")]
+        [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<UnitResponse>>> GetAll(bool includeArchived = false)
         {
             try
             {
-                IEnumerable<Unit> units;
-
-                if (includeArchived)
-                    units = await _unitLogic.GetAllUnitsAsync();
-                else
-                    units = await _unitLogic.GetAllActiveUnitsAsync();
+                IEnumerable<Unit> units = includeArchived
+                    ? await _unitLogic.GetAllArchiveUnitsAsync()
+                    : await _unitLogic.GetAllActiveUnitsAsync();
 
                 var response = _mapper.Map<IEnumerable<UnitResponse>>(units);
                 return Ok(response);
@@ -47,7 +45,7 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("get/{id}")]
         public async Task<ActionResult<UnitResponse>> GetById(int id)
         {
             try

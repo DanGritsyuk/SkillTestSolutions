@@ -31,7 +31,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 IEnumerable<Client> clients = includeArchived
-                    ? await _clientLogic.GetAllClientsAsync()
+                    ? await _clientLogic.GetAllArchiveClientsAsync()
                     : await _clientLogic.GetAllActiveClientsAsync();
 
                 return Ok(_mapper.Map<IEnumerable<ClientResponse>>(clients));

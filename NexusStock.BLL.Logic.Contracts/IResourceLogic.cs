@@ -6,6 +6,7 @@ namespace NexusStock.BLL.Logic.Contracts
     {
         Task<IEnumerable<Resource>> GetAllResourcesAsync();
         Task<IEnumerable<Resource>> GetAllActiveResourcesAsync();
+        Task<IEnumerable<Resource>> GetAllArchiveResourcesAsync();
         Task<Resource> GetResourceByIdAsync(int id);
         Task CreateResourceAsync(Resource resource);
         Task UpdateResourceAsync(Resource resource);

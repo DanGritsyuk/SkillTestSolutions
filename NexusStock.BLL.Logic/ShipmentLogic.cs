@@ -167,9 +167,9 @@ namespace NexusStock.BLL.Logic
         public async Task<IEnumerable<ShipmentDocument>> GetFilteredShipmentsAsync(
             DateTime? startDate,
             DateTime? endDate,
-            List<int> clientIds,
-            List<int> resourceIds,
-            List<int> unitIds)
+            IEnumerable<int> clientIds,
+            IEnumerable<int> resourceIds,
+            IEnumerable<int> unitIds)
         {
             Expression<Func<ShipmentDocument, bool>> filter = sd =>
                 (!startDate.HasValue || sd.Date >= startDate.Value) &&

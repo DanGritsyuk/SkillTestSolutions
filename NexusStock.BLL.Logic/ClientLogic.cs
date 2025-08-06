@@ -2,6 +2,7 @@
 using NexusStock.BLL.Logic.Contracts;
 using NexusStock.Common.Entities;
 using NexusStock.DAL.Repository.Contracts;
+using System.Linq.Expressions;
 
 namespace NexusStock.BLL.Logic
 {
@@ -17,38 +18,13 @@ namespace NexusStock.BLL.Logic
         }
 
         public async Task<IEnumerable<Client>> GetAllClientsAsync()
-        {
-            _logger.LogInformation("Запрос всех клиентов");
-            try
-            {
-                var result = await _unitOfWork.Clients.GetAllAsync();
-                var list = result.ToList();
-                _logger.LogInformation("Найдено {Count} клиентов", list.Count);
-                return list;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении всех клиентов");
-                throw;
-            }
-        }
+            => await GetClientsAsync(null, "всех клиентов", "Найдено {Count} клиентов");
 
         public async Task<IEnumerable<Client>> GetAllActiveClientsAsync()
-        {
-            _logger.LogInformation("Запрос всех активных клиентов");
-            try
-            {
-                var result = await _unitOfWork.Clients.FindAsync(c => c.IsActive);
-                var list = result.ToList();
-                _logger.LogInformation("Найдено {Count} активных клиентов", list.Count);
-                return list;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении активных клиентов");
-                throw;
-            }
-        }
+            => await GetClientsAsync(c => c.IsActive, "активных клиентов", "Найдено {Count} активных клиентов");
+
+        public async Task<IEnumerable<Client>> GetAllArchiveClientsAsync()
+            => await GetClientsAsync(c => !c.IsActive, "архивных клиентов", "Найдено {Count} архивных клиентов");
 
         public async Task<Client> GetClientByIdAsync(int id)
         {
@@ -56,16 +32,12 @@ namespace NexusStock.BLL.Logic
             try
             {
                 var client = await _unitOfWork.Clients.GetByIdAsync(id);
-                if (client == null)
-                {
-                    _logger.LogWarning("Клиент с Id={ClientId} не найден", id);
-                    throw new InvalidOperationException("Клиент не найден");
-                }
-                return client;
+                return client ?? throw new InvalidOperationException("Клиент не найден");
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ex)
             {
-                throw; // уже залоггировано как warning
+                _logger.LogWarning(ex, "Клиент с Id={ClientId} не найден", id);
+                throw;
             }
             catch (Exception ex)
             {
@@ -76,81 +48,108 @@ namespace NexusStock.BLL.Logic
 
         public async Task CreateClientAsync(Client client)
         {
-            _logger.LogInformation("Создание нового клиента с именем '{ClientName}'", client?.Name);
             if (client == null) throw new ArgumentNullException(nameof(client));
-            try
-            {
-                if (await _unitOfWork.Clients.AnyAsync(c => c.Name == client.Name))
-                {
-                    _logger.LogWarning("Клиент с именем '{ClientName}' уже существует", client.Name);
-                    throw new InvalidOperationException("Клиент с таким именем уже существует");
-                }
+            _logger.LogInformation("Создание нового клиента с именем '{ClientName}'", client.Name);
 
-                await _unitOfWork.Clients.AddAsync(client);
-                await _unitOfWork.CompleteAsync();
-
-                _logger.LogInformation("Клиент '{ClientName}' успешно создан (Id={ClientId})",
-                                        client.Name, client.Id);
-            }
-            catch (InvalidOperationException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при создании клиента '{ClientName}'", client.Name);
-                throw;
-            }
+            await ValidateClientNameUniqueness(client.Name);
+            await ExecuteClientOperationAsync(
+                operation: async () => {
+                    await _unitOfWork.Clients.AddAsync(client);
+                    await _unitOfWork.CompleteAsync();
+                },
+                successMessage: $"Клиент '{client.Name}' успешно создан (Id={client.Id})",
+                errorMessage: $"Ошибка при создании клиента '{client.Name}'",
+                clientName: client.Name
+            );
         }
 
         public async Task UpdateClientAsync(Client client)
         {
-            _logger.LogInformation("Обновление клиента Id={ClientId}", client?.Id);
             if (client == null) throw new ArgumentNullException(nameof(client));
-            try
-            {
-                var existing = await GetClientByIdAsync(client.Id);
+            _logger.LogInformation("Обновление клиента Id={ClientId}", client.Id);
 
-                if (existing.Name != client.Name &&
-                    await _unitOfWork.Clients.AnyAsync(c => c.Name == client.Name))
-                {
-                    _logger.LogWarning("Попытка переименовать клиента Id={ClientId} в существующее имя '{NewName}'",
-                                       client.Id, client.Name);
-                    throw new InvalidOperationException("Клиент с таким именем уже существует");
-                }
+            var existing = await GetClientByIdAsync(client.Id);
 
-                existing.Name = client.Name;
-                existing.Address = client.Address;
+            if (existing.Name != client.Name)
+                await ValidateClientNameUniqueness(client.Name, existing.Id);
 
-                _unitOfWork.Clients.Update(existing);
-                await _unitOfWork.CompleteAsync();
-
-                _logger.LogInformation("Клиент Id={ClientId} успешно обновлён", client.Id);
-            }
-            catch (InvalidOperationException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при обновлении клиента Id={ClientId}", client.Id);
-                throw;
-            }
+            await ExecuteClientOperationAsync(
+                operation: async () => {
+                    existing.Name = client.Name;
+                    existing.Address = client.Address;
+                    _unitOfWork.Clients.Update(existing);
+                    await _unitOfWork.CompleteAsync();
+                },
+                successMessage: $"Клиент Id={client.Id} успешно обновлён",
+                errorMessage: $"Ошибка при обновлении клиента Id={client.Id}",
+                clientName: client.Name
+            );
         }
 
         public async Task ToggleClientStatusAsync(int id)
         {
             _logger.LogInformation("Переключение статуса клиента Id={ClientId}", id);
+            var client = await GetClientByIdAsync(id);
+
+            await ExecuteClientOperationAsync(
+                operation: async () => {
+                    client.IsActive = !client.IsActive;
+                    _unitOfWork.Clients.Update(client);
+                    await _unitOfWork.CompleteAsync();
+                },
+                successMessage: $"Статус клиента Id={id} теперь IsActive={client.IsActive}",
+                errorMessage: $"Ошибка при переключении статуса клиента Id={id}",
+                clientName: client.Name
+            );
+        }
+
+        private async Task<IEnumerable<Client>> GetClientsAsync(
+            Expression<Func<Client, bool>> predicate,
+            string operationName,
+            string successMessage)
+        {
+            _logger.LogInformation("Запрос {OperationName}", operationName);
             try
             {
-                var client = await GetClientByIdAsync(id);
-                client.IsActive = !client.IsActive;
+                var result = predicate == null
+                    ? await _unitOfWork.Clients.GetAllAsync()
+                    : await _unitOfWork.Clients.FindAsync(predicate);
 
-                _unitOfWork.Clients.Update(client);
-                await _unitOfWork.CompleteAsync();
+                var list = result.ToList();
+                _logger.LogInformation(successMessage, list.Count);
+                return list;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении {OperationName}", operationName);
+                throw;
+            }
+        }
 
-                _logger.LogInformation("Статус клиента Id={ClientId} теперь IsActive={IsActive}",
-                                        id, client.IsActive);
+        private async Task ValidateClientNameUniqueness(string name, int? excludeId = null)
+        {
+            bool nameExists = excludeId.HasValue
+                ? await _unitOfWork.Clients.AnyAsync(c => c.Name == name && c.Id != excludeId.Value)
+                : await _unitOfWork.Clients.AnyAsync(c => c.Name == name);
+
+            if (nameExists)
+            {
+                var message = $"Клиент с именем '{name}' уже существует";
+                _logger.LogWarning(message);
+                throw new InvalidOperationException(message);
+            }
+        }
+
+        private async Task ExecuteClientOperationAsync(
+            Func<Task> operation,
+            string successMessage,
+            string errorMessage,
+            string clientName = null)
+        {
+            try
+            {
+                await operation();
+                _logger.LogInformation(successMessage);
             }
             catch (InvalidOperationException)
             {
@@ -158,7 +157,7 @@ namespace NexusStock.BLL.Logic
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при переключении статуса клиента Id={ClientId}", id);
+                _logger.LogError(ex, errorMessage);
                 throw;
             }
         }

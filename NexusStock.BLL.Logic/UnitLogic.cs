@@ -1,8 +1,8 @@
-﻿using NexusStock.BLL.Logic.Contracts;
+﻿using Microsoft.Extensions.Logging;
+using NexusStock.BLL.Logic.Contracts;
 using NexusStock.Common.Entities;
 using NexusStock.DAL.Repository.Contracts;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace NexusStock.BLL.Logic
 {
@@ -20,110 +20,87 @@ namespace NexusStock.BLL.Logic
         }
 
         public async Task<IEnumerable<Unit>> GetAllUnitsAsync()
-        {
-            try
-            {
-                var units = await _unitOfWork.Units.GetAllAsync();
-                return units.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении списка единиц измерения");
-                throw new Exception("Ошибка при загрузке данных");
-            }
-        }
+            => await GetUnitsAsync(null, "Ошибка при получении списка единиц измерения");
 
         public async Task<IEnumerable<Unit>> GetAllActiveUnitsAsync()
-        {
-            try
-            {
-                var units = await _unitOfWork.Units.FindAsync(u => u.IsActive);
-                return units.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при получении списка активных единиц измерения");
-                throw new Exception("Ошибка при загрузке данных");
-            }
-        }
+            => await GetUnitsAsync(u => u.IsActive, "Ошибка при получении списка активных единиц измерения");
+
+        public async Task<IEnumerable<Unit>> GetAllArchiveUnitsAsync()
+            => await GetUnitsAsync(u => !u.IsActive, "Ошибка при получении списка архивных единиц измерения");
 
         public async Task<Unit> GetUnitByIdAsync(int id)
         {
             var unit = await _unitOfWork.Units.GetByIdAsync(id);
-            if (unit == null)
-            {
-                throw new Exception($"Единица измерения с ID {id} не найдена");
-            }
-            return unit;
+            return unit ?? throw new Exception($"Единица измерения с ID {id} не найдена");
         }
 
         public async Task CreateUnitAsync(Unit unit)
         {
             ValidateUnit(unit);
+            await CheckUnitNameUniqueness(unit.Name);
 
-            if (await _unitOfWork.Units.AnyAsync(u => u.Name == unit.Name))
-                throw new Exception("Единица измерения с таким названием уже существует");
-
-            try
-            {
-                await _unitOfWork.Units.AddAsync(unit);
-                await _unitOfWork.CompleteAsync();
-                _logger.LogInformation($"Создана новая единица измерения: {unit.Name}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при создании единицы измерения");
-                throw new Exception("Ошибка при сохранении данных");
-            }
+            await ExecuteUnitOperationAsync(
+                operation: async () => {
+                    await _unitOfWork.Units.AddAsync(unit);
+                    await _unitOfWork.CompleteAsync();
+                },
+                successMessage: $"Создана новая единица измерения: {unit.Name}",
+                errorMessage: "Ошибка при создании единицы измерения"
+            );
         }
 
         public async Task UpdateUnitAsync(Unit unit)
         {
             ValidateUnit(unit);
-
             var existing = await GetUnitByIdAsync(unit.Id);
 
-            if (existing.Name != unit.Name &&
-                await _unitOfWork.Units.AnyAsync(u => u.Name == unit.Name))
-                throw new Exception("Единица измерения с таким названием уже существует");
+            if (existing.Name != unit.Name)
+                await CheckUnitNameUniqueness(unit.Name, existing.Id);
 
-            try
-            {
-                existing.Name = unit.Name;
-                existing.IsActive = unit.IsActive;
-
-                _unitOfWork.Units.Update(existing);
-                await _unitOfWork.CompleteAsync();
-                _logger.LogInformation($"Обновлена единица измерения: {unit.Name} (ID: {unit.Id})");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при обновлении единицы измерения");
-                throw new Exception("Ошибка при обновлении данных");
-            }
+            await ExecuteUnitOperationAsync(
+                operation: async () => {
+                    existing.Name = unit.Name;
+                    existing.IsActive = unit.IsActive;
+                    _unitOfWork.Units.Update(existing);
+                    await _unitOfWork.CompleteAsync();
+                },
+                successMessage: $"Обновлена единица измерения: {unit.Name} (ID: {unit.Id})",
+                errorMessage: "Ошибка при обновлении единицы измерения"
+            );
         }
 
         public async Task ToggleUnitStatusAsync(int id)
         {
             var unit = await GetUnitByIdAsync(id);
 
-            // Проверка использования единицы измерения в документах
-            if (await IsUnitUsedAsync(id))
+            if (!unit.IsActive && await IsUnitUsedAsync(id))
                 throw new Exception("Невозможно архивировать единицу измерения, так как она используется в документах");
 
+            await ExecuteUnitOperationAsync(
+                operation: async () => {
+                    unit.IsActive = !unit.IsActive;
+                    _unitOfWork.Units.Update(unit);
+                    await _unitOfWork.CompleteAsync();
+                },
+                successMessage: $"Единица измерения {unit.Name} {(unit.IsActive ? "восстановлена" : "архивирована")}",
+                errorMessage: "Ошибка при изменении статуса единицы измерения"
+            );
+        }
+
+        private async Task<IEnumerable<Unit>> GetUnitsAsync(Expression<Func<Unit, bool>> predicate, string errorMessage)
+        {
             try
             {
-                unit.IsActive = !unit.IsActive;
-                _unitOfWork.Units.Update(unit);
-                await _unitOfWork.CompleteAsync();
+                var units = predicate == null
+                    ? await _unitOfWork.Units.GetAllAsync()
+                    : await _unitOfWork.Units.FindAsync(predicate);
 
-                var action = unit.IsActive ? "восстановлена" : "архивирована";
-                _logger.LogInformation($"Единица измерения {unit.Name} {action}");
+                return units.ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при изменении статуса единицы измерения");
-                throw new Exception("Ошибка при изменении статуса");
+                _logger.LogError(ex, errorMessage);
+                throw new Exception("Ошибка при загрузке данных");
             }
         }
 
@@ -133,11 +110,42 @@ namespace NexusStock.BLL.Logic
                 throw new Exception("Название единицы измерения не может быть пустым");
         }
 
+        private async Task CheckUnitNameUniqueness(string name, int? excludeId = null)
+        {
+            bool nameExists = excludeId.HasValue
+                ? await _unitOfWork.Units.AnyAsync(u => u.Name == name && u.Id != excludeId.Value)
+                : await _unitOfWork.Units.AnyAsync(u => u.Name == name);
+
+            if (nameExists)
+                throw new Exception("Единица измерения с таким названием уже существует");
+        }
+
         private async Task<bool> IsUnitUsedAsync(int unitId)
         {
             return await _unitOfWork.StockBalances.AnyAsync(b => b.UnitId == unitId) ||
                    await _unitOfWork.ReceiptItems.AnyAsync(i => i.UnitId == unitId) ||
                    await _unitOfWork.ShipmentItems.AnyAsync(i => i.UnitId == unitId);
         }
+
+        private async Task ExecuteUnitOperationAsync(Func<Task> operation, string successMessage, string errorMessage)
+        {
+            try
+            {
+                await operation();
+                _logger.LogInformation(successMessage);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, errorMessage);
+                throw new Exception(GetUserFriendlyErrorMessage(errorMessage));
+            }
+        }
+
+        private static string GetUserFriendlyErrorMessage(string errorMessage) => errorMessage switch
+        {
+            _ when errorMessage.Contains("создании") => "Ошибка при сохранении данных",
+            _ when errorMessage.Contains("обновлении") => "Ошибка при обновлении данных",
+            _ => "Ошибка операции"
+        };
     }
 }
