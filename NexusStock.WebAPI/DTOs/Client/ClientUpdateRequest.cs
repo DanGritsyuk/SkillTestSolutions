@@ -4,9 +4,6 @@ namespace NexusStock.WebAPI.DTOs.Client
 {
     public class ClientUpdateRequest
     {
-        [Required(ErrorMessage = "ID обязательно")]
-        public int Id { get; set; }
-
         [Required(ErrorMessage = "Имя обязательно")]
         [StringLength(100, ErrorMessage = "Максимум 100 символов")]
         public string Name { get; set; }

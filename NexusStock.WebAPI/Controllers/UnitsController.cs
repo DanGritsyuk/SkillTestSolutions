@@ -25,7 +25,7 @@ namespace NexusStock.WebAPI.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet]
+        [HttpGet("get_all")]
         public async Task<ActionResult<IEnumerable<UnitResponse>>> GetAll(bool includeArchived = false)
         {
             try
@@ -66,7 +66,7 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] UnitCreateRequest request)
         {
             try
@@ -91,8 +91,8 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update([FromBody] UnitUpdateRequest request)
+        [HttpPut("update/{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UnitUpdateRequest request)
         {
             try
             {
@@ -111,7 +111,7 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при обновлении единицы измерения ID: {request.Id}");
+                _logger.LogError(ex, $"Ошибка при обновлении единицы измерения ID: {id}");
                 return StatusCode(500, "Внутренняя ошибка сервера");
             }
         }

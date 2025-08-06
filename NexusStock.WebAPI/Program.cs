@@ -1,7 +1,8 @@
-
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using NexusStock.DAL.Repository;
 using NexusStock.WebAPI.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using NexusStock.WebAPI.Mapping;
 
 namespace NexusStock.WebAPI
@@ -12,13 +13,12 @@ namespace NexusStock.WebAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+            // Регистрация AutoMapper через стандартный метод
+            builder.Services.AddAutoMapper(cfg => { }, typeof(ClientProfile).Assembly);
 
             builder.Services.ConfigureDALDependencies();
             builder.Services.ConfigureBLLDependencies();
@@ -29,20 +29,34 @@ namespace NexusStock.WebAPI
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+
+                // Проверка конфигурации AutoMapper
+                using var scope = app.Services.CreateScope();
+                var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+
+                try
+                {
+                    //Проверка валидности конфигурации
+                    ((MapperConfiguration)mapper.ConfigurationProvider).AssertConfigurationIsValid();
+                    Console.WriteLine("AutoMapper configuration is valid");
+                }
+                catch (AutoMapperConfigurationException ex)
+                {
+                    Console.WriteLine("AutoMapper configuration error:");
+                    Console.WriteLine(ex.Message);
+                }
+
+                // Предварительная компиляция маппингов
+                ((MapperConfiguration)mapper.ConfigurationProvider).CompileMappings();
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
-
             app.Run();
         }
     }

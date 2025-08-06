@@ -25,7 +25,7 @@ namespace NexusStock.WebAPI.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
+        [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<ReceiptResponse>>> GetFiltered(
             [FromQuery] ReceiptFilterRequest filter)
         {
@@ -47,7 +47,7 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("get/{id}")]
         public async Task<ActionResult<ReceiptResponse>> GetById(int id)
         {
             try
@@ -64,7 +64,7 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] ReceiptCreateRequest request)
         {
             try
@@ -88,8 +88,8 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Update([FromBody] ReceiptUpdateRequest request)
+        [HttpPut("update/{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] ReceiptUpdateRequest request)
         {
             try
             {
@@ -107,12 +107,12 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при обновлении документа поступления ID: {request.Id}");
+                _logger.LogError(ex, $"Ошибка при обновлении документа поступления ID: {id}");
                 return StatusCode(500, "Внутренняя ошибка сервера");
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             try

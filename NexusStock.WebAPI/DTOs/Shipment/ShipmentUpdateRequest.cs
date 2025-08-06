@@ -4,9 +4,6 @@ namespace NexusStock.WebAPI.DTOs.Shipment
 {
     public class ShipmentUpdateRequest
     {
-        [Required(ErrorMessage = "ID обязательно")]
-        public int Id { get; set; }
-
         [Required(ErrorMessage = "Номер документа обязателен")]
         public string Number { get; set; }
 

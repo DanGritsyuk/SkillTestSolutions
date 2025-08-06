@@ -4,9 +4,6 @@ namespace NexusStock.WebAPI.DTOs.Receipt
 {
     public class ReceiptUpdateRequest
     {
-        [Required(ErrorMessage = "ID обязательно")]
-        public int Id { get; set; }
-
         [Required(ErrorMessage = "Номер документа обязателен")]
         public string Number { get; set; }
 
