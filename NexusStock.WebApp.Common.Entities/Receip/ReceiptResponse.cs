@@ -1,4 +1,4 @@
-﻿namespace NexusStock.WebApp.Common.Entities.Receip
+﻿namespace NexusStock.WebApp.Common.Entities.Receipt
 {
     public class ReceiptResponse
     {

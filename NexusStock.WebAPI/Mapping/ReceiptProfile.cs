@@ -14,7 +14,8 @@ namespace NexusStock.WebAPI.Mapping
                 .ForMember(dest => dest.UnitName, opt => opt.MapFrom(src => src.Unit.Name));
 
             CreateMap<ReceiptCreateRequest, ReceiptDocument>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore());
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
 
             CreateMap<ReceiptItemRequest, ReceiptItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -24,7 +25,8 @@ namespace NexusStock.WebAPI.Mapping
                 .ForMember(dest => dest.Unit, opt => opt.Ignore());
 
             CreateMap<ReceiptUpdateRequest, ReceiptDocument>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore());
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
         }
     }
 }

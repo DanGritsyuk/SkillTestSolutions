@@ -18,7 +18,8 @@ namespace NexusStock.WebAPI.Mapping
             CreateMap<ShipmentCreateRequest, ShipmentDocument>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.IsSigned, opt => opt.MapFrom(_ => false))
-                .ForMember(dest => dest.Client, opt => opt.Ignore());
+                .ForMember(dest => dest.Client, opt => opt.Ignore())
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
 
             CreateMap<ShipmentItemRequest, ShipmentItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -30,7 +31,8 @@ namespace NexusStock.WebAPI.Mapping
             CreateMap<ShipmentUpdateRequest, ShipmentDocument>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.IsSigned, opt => opt.Ignore())
-                .ForMember(dest => dest.Client, opt => opt.Ignore());
+                .ForMember(dest => dest.Client, opt => opt.Ignore())
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
         }
     }
 }

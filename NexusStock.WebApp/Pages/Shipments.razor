@@ -1,0 +1,590 @@
+﻿@page "/shipments"
+@using NexusStock.WebApp.BLL.Services.Contracts
+@using NexusStock.WebApp.Common.Entities.Shipment
+@using NexusStock.WebApp.Common.Entities.Client
+@using NexusStock.WebApp.Common.Entities.Resources
+@using NexusStock.WebApp.Common.Entities.Unit
+@inject IShipmentsService ShipmentsService
+@inject IClientsService ClientsService
+@inject IResourcesService ResourcesService
+@inject IUnitsService UnitsService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>Отгрузки</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Документы отгрузки</h3>
+    <button class="btn btn-primary" @onclick="ShowCreateForm">
+        <i class="bi bi-plus-circle me-1"></i> Создать
+    </button>
+</div>
+
+<!-- Фильтры -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <button class="btn btn-link text-decoration-none w-100 text-start d-flex justify-content-between align-items-center"
+                @onclick="ToggleFilterPanel">
+            <span class="fw-bold">Фильтры</span>
+            <i class="bi bi-chevron-@(showFilters ? "up" : "down")"></i>
+        </button>
+    </div>
+
+    @if (showFilters)
+    {
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Дата с</label>
+                        <InputDate class="form-control" @bind-Value="filter.StartDate" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Дата по</label>
+                        <InputDate class="form-control" @bind-Value="filter.EndDate" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Клиенты</label>
+                        <select class="form-select" multiple size="3" @onchange="OnClientFilterChange">
+                            @if (allClients?.Count > 0)
+                            {
+                                @foreach (var client in allClients)
+                                {
+                                    <option value="@client.Id" selected="@selectedClientIds.Contains(client.Id)">
+                                        @client.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Статус</label>
+                        <select class="form-select" @bind="filterStatus">
+                            <option value="">Все</option>
+                            <option value="signed">Подписанные</option>
+                            <option value="unsigned">Неподписанные</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Ресурсы</label>
+                        <select class="form-select" multiple size="3" @onchange="OnResourceFilterChange">
+                            @if (allResources?.Count > 0)
+                            {
+                                @foreach (var resource in allResources)
+                                {
+                                    <option value="@resource.Id" selected="@selectedResourceIds.Contains(resource.Id)">
+                                        @resource.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Единицы измерения</label>
+                        <select class="form-select" multiple size="3" @onchange="OnUnitFilterChange">
+                            @if (allUnits?.Count > 0)
+                            {
+                                @foreach (var unit in allUnits)
+                                {
+                                    <option value="@unit.Id" selected="@selectedUnitIds.Contains(unit.Id)">
+                                        @unit.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-outline-secondary me-2" @onclick="ResetFilters">
+                    <i class="bi bi-x-lg me-1"></i> Сбросить
+                </button>
+                <button class="btn btn-primary" @onclick="ApplyFilters">
+                    <i class="bi bi-filter me-1"></i> Применить
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    </div>
+}
+else if (shipments.Count == 0)
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i> Нет документов отгрузки
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 10%">Номер</th>
+                        <th style="width: 10%">Дата</th>
+                        <th style="width: 20%">Клиент</th>
+                        <th style="width: 20%">Товары</th>
+                        <th style="width: 10%">Общее кол-во</th>
+                        <th style="width: 10%">Статус</th>
+                        <th style="width: 20%">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var shipment in shipments)
+                    {
+                        <tr>
+                            <td>@shipment.Number</td>
+                            <td>@shipment.Date.ToString("dd.MM.yyyy")</td>
+                            <td>@shipment.ClientName</td>
+                            <td>
+                                <button class="btn btn-link p-0 text-decoration-none"
+                                        @onclick="() => ToggleDetails(shipment.Id)">
+                                    @if (expandedShipments.Contains(shipment.Id))
+                                    {
+                                        <i class="bi bi-chevron-down me-1"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-chevron-right me-1"></i>
+                                    }
+                                    Показать товары (@shipment.Items.Count)
+                                </button>
+                            </td>
+                            <td>@shipment.Items.Sum(i => i.Quantity).ToString("N2")</td>
+                            <td>
+                                @if (shipment.IsSigned)
+                                {
+                                    <span class="badge bg-success">Подписан</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning">Черновик</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex">
+                                    @if (!shipment.IsSigned)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary me-1"
+                                                @onclick="() => EditShipment(shipment)"
+                                                title="Редактировать">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success me-1"
+                                                @onclick="() => SignShipment(shipment)"
+                                                title="Подписать">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger me-1"
+                                                @onclick="() => DeleteShipment(shipment)"
+                                                title="Удалить">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-secondary me-1"
+                                                @onclick="() => RevokeShipment(shipment)"
+                                                title="Отозвать">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+
+                        @if (expandedShipments.Contains(shipment.Id))
+                        {
+                            <tr class="bg-light">
+                                <td colspan="7">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Ресурс</th>
+                                                <th>Единица измерения</th>
+                                                <th>Количество</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in shipment.Items)
+                                            {
+                                                <tr>
+                                                    <td>@item.ResourceName</td>
+                                                    <td>@item.UnitName</td>
+                                                    <td>@item.Quantity.ToString("N2")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (showForm)
+{
+    <div class="modal fade show" style="display:block; background:rgba(0,0,0,0.5)" @onclick="CloseForm">
+        <div class="modal-dialog modal-lg" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(isEditing ? "Редактирование документа" : "Создание документа")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@currentShipment" OnValidSubmit="@SaveShipment">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Номер документа *</label>
+                                <InputText class="form-control" @bind-Value="currentShipment.Number" />
+                                <ValidationMessage For="@(() => currentShipment.Number)" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Дата *</label>
+                                <InputDate class="form-control" @bind-Value="currentShipment.Date" />
+                                <ValidationMessage For="@(() => currentShipment.Date)" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Клиент *</label>
+                                <select class="form-select" @bind="currentShipment.ClientId">
+                                    <option value="">Выберите клиента</option>
+                                    @foreach (var client in allClients.Where(c => c.IsActive))
+                                    {
+                                        <option value="@client.Id">@client.Name</option>
+                                    }
+                                </select>
+                                <ValidationMessage For="@(() => currentShipment.ClientId)" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Товары</h5>
+                            <button type="button" class="btn btn-sm btn-success" @onclick="AddShipmentItem">
+                                <i class="bi bi-plus-circle me-1"></i> Добавить товар
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40%">Ресурс *</th>
+                                        <th style="width: 30%">Единица измерения *</th>
+                                        <th style="width: 20%">Количество *</th>
+                                        <th style="width: 10%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < currentShipment.Items.Count; i++)
+                                    {
+                                        var item = currentShipment.Items[i];
+                                        <tr>
+                                            <td>
+                                                <select class="form-select" @bind="item.ResourceId">
+                                                    <option value="">Выберите ресурс</option>
+                                                    @foreach (var resource in allResources.Where(r => r.IsActive))
+                                                    {
+                                                        <option value="@resource.Id">@resource.Name</option>
+                                                    }
+                                                </select>
+                                                <ValidationMessage For="@(() => item.ResourceId)" />
+                                            </td>
+                                            <td>
+                                                <select class="form-select" @bind="item.UnitId">
+                                                    <option value="">Выберите единицу</option>
+                                                    @foreach (var unit in allUnits.Where(u => u.IsActive))
+                                                    {
+                                                        <option value="@unit.Id">@unit.Name</option>
+                                                    }
+                                                </select>
+                                                <ValidationMessage For="@(() => item.UnitId)" />
+                                            </td>
+                                            <td>
+                                                <InputNumber class="form-control" @bind-Value="item.Quantity" />
+                                                <ValidationMessage For="@(() => item.Quantity)" />
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-danger"
+                                                        @onclick="() => RemoveShipmentItem(i)"
+                                                        title="Удалить">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="button" class="btn btn-secondary me-2"
+                                    @onclick="CloseForm">
+                                <i class="bi bi-x-lg me-1"></i> Отмена
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Сохранить
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ShipmentResponse> shipments = new();
+    private List<ClientResponse> allClients = new();
+    private List<ResourceResponse> allResources = new();
+    private List<UnitResponse> allUnits = new();
+    private List<int> selectedClientIds = new();
+    private List<int> selectedResourceIds = new();
+    private List<int> selectedUnitIds = new();
+    private HashSet<int> expandedShipments = new();
+    private ShipmentFilterRequest filter = new();
+    private string filterStatus = "";
+    private bool isLoading = true;
+    private bool showFilters = true;
+    private bool showForm = false;
+    private bool isEditing = false;
+    private ShipmentCreateRequest currentShipment = new();
+    private int currentId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+        await LoadShipments();
+    }
+
+    private async Task LoadInitialData()
+    {
+        allClients = (await ClientsService.GetClientsAsync(false))?.ToList() ?? new();
+        allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
+        allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
+    }
+
+    private async Task LoadShipments()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Применяем фильтр статуса
+            // if (!string.IsNullOrEmpty(filterStatus))
+            // {
+            //     filter.IsSigned = filterStatus == "signed";
+            // }
+            // else
+            // {
+            //     filter.IsSigned = null;
+            // }
+
+            // Применяем фильтры клиентов
+            filter.ClientIds = selectedClientIds;
+            filter.ResourceIds = selectedResourceIds;
+            filter.UnitIds = selectedUnitIds;
+
+            shipments = (await ShipmentsService.GetFilteredShipmentsAsync(filter))?.ToList() ?? new();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ToggleDetails(int shipmentId)
+    {
+        if (expandedShipments.Contains(shipmentId))
+        {
+            expandedShipments.Remove(shipmentId);
+        }
+        else
+        {
+            expandedShipments.Add(shipmentId);
+        }
+    }
+
+    private void ShowCreateForm()
+    {
+        currentShipment = new ShipmentCreateRequest
+        {
+            Date = DateTime.Today,
+            Items = new List<ShipmentItemRequest>()
+        };
+        isEditing = false;
+        showForm = true;
+    }
+
+    private void EditShipment(ShipmentResponse shipment)
+    {
+        if (shipment.IsSigned)
+        {
+            // Нельзя редактировать подписанные документы
+            return;
+        }
+
+        currentShipment = new ShipmentCreateRequest
+        {
+            Number = shipment.Number,
+            Date = shipment.Date,
+            ClientId = shipment.ClientId,
+            Items = shipment.Items.Select(i => new ShipmentItemRequest
+            {
+                ResourceId = i.ResourceId,
+                UnitId = i.UnitId,
+                Quantity = i.Quantity
+            }).ToList()
+        };
+        currentId = shipment.Id;
+        isEditing = true;
+        showForm = true;
+    }
+
+    private void CloseForm()
+    {
+        showForm = false;
+    }
+
+    private void AddShipmentItem()
+    {
+        currentShipment.Items.Add(new ShipmentItemRequest());
+    }
+
+    private void RemoveShipmentItem(int index)
+    {
+        if (currentShipment.Items.Count > index)
+        {
+            currentShipment.Items.RemoveAt(index);
+        }
+    }
+
+    private async Task SaveShipment()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                await ShipmentsService.UpdateShipmentAsync(new ShipmentUpdateRequest
+                {
+                    Id = currentId,
+                    Number = currentShipment.Number,
+                    Date = currentShipment.Date,
+                    ClientId = currentShipment.ClientId,
+                    Items = currentShipment.Items
+                });
+            }
+            else
+            {
+                await ShipmentsService.CreateShipmentAsync(currentShipment);
+            }
+
+            showForm = false;
+            await LoadShipments();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка: {ex.Message}");
+        }
+    }
+
+    private async Task SignShipment(ShipmentResponse shipment)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Подписать документ {shipment.Number}?"))
+        {
+            await ShipmentsService.SignShipmentAsync(shipment.Id);
+            await LoadShipments();
+        }
+    }
+
+    private async Task RevokeShipment(ShipmentResponse shipment)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Отозвать документ {shipment.Number}?"))
+        {
+            await ShipmentsService.RevokeShipmentAsync(shipment.Id);
+            await LoadShipments();
+        }
+    }
+
+    private async Task DeleteShipment(ShipmentResponse shipment)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", $"Удалить документ {shipment.Number}?"))
+        {
+            await ShipmentsService.DeleteShipmentAsync(shipment.Id);
+            await LoadShipments();
+        }
+    }
+
+    private void ToggleFilterPanel()
+    {
+        showFilters = !showFilters;
+    }
+
+    private void OnClientFilterChange(ChangeEventArgs e)
+    {
+        var selected = e.Value as string[];
+        selectedClientIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
+    }
+
+    private void OnResourceFilterChange(ChangeEventArgs e)
+    {
+        var selected = e.Value as string[];
+        selectedResourceIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
+    }
+
+    private void OnUnitFilterChange(ChangeEventArgs e)
+    {
+        var selected = e.Value as string[];
+        selectedUnitIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadShipments();
+    }
+
+    private async Task ResetFilters()
+    {
+        selectedClientIds = new List<int>();
+        selectedResourceIds = new List<int>();
+        selectedUnitIds = new List<int>();
+        filterStatus = "";
+        filter = new ShipmentFilterRequest();
+        await LoadShipments();
+    }
+
+    public void Dispose()
+    {
+        // Очистка ресурсов при необходимости
+    }
+}

@@ -94,6 +94,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var document = _mapper.Map<ReceiptDocument>(request);
+                document.Id = id;  
                 await _receiptLogic.UpdateReceiptAsync(document);
                 return NoContent();
             }

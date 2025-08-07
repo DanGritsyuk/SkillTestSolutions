@@ -98,6 +98,7 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var shipment = _mapper.Map<ShipmentDocument>(request);
+                shipment.Id = id;
                 await _shipmentLogic.UpdateShipmentAsync(shipment);
 
                 return NoContent();

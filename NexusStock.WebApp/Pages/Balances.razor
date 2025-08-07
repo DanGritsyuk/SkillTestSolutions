@@ -1,0 +1,201 @@
+﻿@page "/balances"
+@page "/"
+@using NexusStock.WebApp.BLL.Services.Contracts
+@using NexusStock.WebApp.Common.Entities.Balance
+@using NexusStock.WebApp.Common.Entities.Resources
+@using NexusStock.WebApp.Common.Entities.Unit
+@inject IStockBalanceService StockService
+@inject IResourcesService ResourcesService
+@inject IUnitsService UnitsService
+
+<PageTitle>Складские остатки</PageTitle>
+
+<h3>Складские остатки</h3>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Фильтры</h5>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleFilterPanel">
+                <i class="bi bi-funnel"></i>
+                @(showFilters ? "Скрыть" : "Показать")
+            </button>
+        </div>
+    </div>
+
+    @if (showFilters)
+    {
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Ресурсы</label>
+                        <select class="form-select" multiple size="5" @onchange="OnResourceFilterChange">
+                            @if (allResources?.Count > 0)
+                            {
+                                @foreach (var resource in allResources)
+                                {
+                                    <option value="@resource.Id" selected="@selectedResourceIds.Contains(resource.Id)">
+                                        @resource.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Единицы измерения</label>
+                        <select class="form-select" multiple size="5" @onchange="OnUnitFilterChange">
+                            @if (allUnits?.Count > 0)
+                            {
+                                @foreach (var unit in allUnits)
+                                {
+                                    <option value="@unit.Id" selected="@selectedUnitIds.Contains(unit.Id)">
+                                        @unit.Name
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end mt-2">
+                <button class="btn btn-outline-secondary" @onclick="ResetFilters">
+                    <i class="bi bi-x-lg"></i> Сбросить
+                </button>
+                <button class="btn btn-primary" @onclick="ApplyFilters">
+                    <i class="bi bi-filter me-1"></i> Применить
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-content-center my-5">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    </div>
+}
+else if (balances?.Count == 0)
+{
+    <div class="alert alert-info">
+        Нет данных для отображения
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Ресурс</th>
+                    <th>Единица измерения</th>
+                    <th>Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var balance in balances)
+                {
+                    <tr>
+                        <td>@balance.ResourceName</td>
+                        <td>@balance.UnitName</td>
+                        <td>@balance.Quantity.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<StockBalanceResponse> balances = new();
+    private List<ResourceResponse> allResources = new();
+    private List<UnitResponse> allUnits = new();
+    private List<int> selectedResourceIds = new();
+    private List<int> selectedUnitIds = new();
+    private bool isLoading = true;
+    private bool showFilters = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialData();
+        await LoadBalances();
+    }
+
+    private async Task LoadInitialData()
+    {
+        allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
+        allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
+
+        // Инициализация фильтров - все выбранны по умолчанию
+        selectedResourceIds = allResources.Select(r => r.Id).ToList();
+        selectedUnitIds = allUnits.Select(u => u.Id).ToList();
+    }
+
+    private async Task LoadBalances()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            balances = (await StockService.GetFilteredStockBalancesAsync(
+                selectedResourceIds,
+                selectedUnitIds
+            ))?.ToList() ?? new();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnResourceFilterChange(ChangeEventArgs e)
+    {
+        var selected = e.Value as string[];
+        if (selected != null)
+        {
+            selectedResourceIds = selected.Select(int.Parse).ToList();
+        }
+        else
+        {
+            selectedResourceIds = new List<int>();
+        }
+    }
+
+    private void OnUnitFilterChange(ChangeEventArgs e)
+    {
+        var selected = e.Value as string[];
+        if (selected != null)
+        {
+            selectedUnitIds = selected.Select(int.Parse).ToList();
+        }
+        else
+        {
+            selectedUnitIds = new List<int>();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadBalances();
+    }
+
+    private async Task ResetFilters()
+    {
+        selectedResourceIds = allResources.Select(r => r.Id).ToList();
+        selectedUnitIds = allUnits.Select(u => u.Id).ToList();
+        await LoadBalances();
+    }
+
+    private void ToggleFilterPanel()
+    {
+        showFilters = !showFilters;
+    }
+}

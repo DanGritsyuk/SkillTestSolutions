@@ -1,6 +1,6 @@
-﻿namespace NexusStock.WebApp.Common.Entities.Balance
+﻿namespace NexusStock.WebApp.Common.Entities.Shipment
 {
-    public class StockBalanceResponse
+    public class ShipmentItemResponse
     {
         public int ResourceId { get; set; }
         public string ResourceName { get; set; }

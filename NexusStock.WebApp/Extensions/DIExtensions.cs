@@ -10,6 +10,9 @@ namespace NexusStock.WebApp.Extensions
             services.AddScoped<IUnitsService, UnitsService>();
             services.AddScoped<IResourcesService, ResourcesService>();
             services.AddScoped<IClientsService, ClientsService>();
+            services.AddScoped<IReceiptsService, ReceiptsService>();
+            services.AddScoped<IShipmentsService, ShipmentsService>();
+            services.AddScoped<IStockBalanceService, StockBalanceService>();
 
             return services;
         }
