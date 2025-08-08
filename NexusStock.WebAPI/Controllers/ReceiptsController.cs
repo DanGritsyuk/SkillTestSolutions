@@ -32,8 +32,8 @@ namespace NexusStock.WebAPI.Controllers
             try
             {
                 var documents = await _receiptLogic.GetFilteredReceiptsAsync(
-                    filter.StartDate,
-                    filter.EndDate,
+                    filter.StartDate?.UtcDateTime,
+                    filter.EndDate?.UtcDateTime,
                     filter.DocumentIds,
                     filter.ResourceIds,
                     filter.UnitIds);

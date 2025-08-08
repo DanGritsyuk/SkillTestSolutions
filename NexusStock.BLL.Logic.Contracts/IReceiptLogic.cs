@@ -9,8 +9,8 @@ namespace NexusStock.BLL.Logic.Contracts
         Task DeleteReceiptAsync(int id);
         Task<ReceiptDocument> GetReceiptWithItemsAsync(int id);
         Task<IEnumerable<ReceiptDocument>> GetFilteredReceiptsAsync(
-            DateTime? startDate,
-            DateTime? endDate,
+            DateTimeOffset? startDate,
+            DateTimeOffset? endDate,
             IEnumerable<int> documentIds,
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds);

@@ -165,8 +165,8 @@ namespace NexusStock.BLL.Logic
         }
 
         public async Task<IEnumerable<ShipmentDocument>> GetFilteredShipmentsAsync(
-            DateTime? startDate,
-            DateTime? endDate,
+            DateTimeOffset? startDate,
+            DateTimeOffset? endDate,
             IEnumerable<int> clientIds,
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds)

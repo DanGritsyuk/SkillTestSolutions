@@ -3,7 +3,7 @@
     public class ShipmentCreateRequest
     {
         public string Number { get; set; }
-        public DateTime Date { get; set; } = DateTime.Today;
+        public DateTimeOffset Date { get; set; }
         public int ClientId { get; set; }
 
         public List<ShipmentItemRequest> Items { get; set; } = new();

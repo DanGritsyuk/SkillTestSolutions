@@ -19,7 +19,7 @@ namespace NexusStock.DAL.Repository
                 .FirstOrDefaultAsync(rd => rd.Id == id);
         }
 
-        public async Task<IEnumerable<ReceiptDocument>> GetByPeriodAsync(DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<ReceiptDocument>> GetByPeriodAsync(DateTimeOffset startDate, DateTimeOffset endDate)
         {
             return await _context.ReceiptDocuments
                 .Where(rd => rd.Date >= startDate && rd.Date <= endDate)
@@ -46,7 +46,7 @@ namespace NexusStock.DAL.Repository
 
         public async Task<bool> IsNumberUniqueAsync(string number, int? excludeId = null)
         {
-            return await _dbSet
+            return await _context.ReceiptDocuments
                 .Where(rd => rd.Number == number && (excludeId == null || rd.Id != excludeId.Value))
                 .AnyAsync();
         }

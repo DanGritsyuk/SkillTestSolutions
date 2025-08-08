@@ -8,14 +8,14 @@ namespace NexusStock.WebAPI.Mapping
     {
         public ReceiptProfile()
         {
-            CreateMap<ReceiptDocument, ReceiptResponse>();
+            CreateMap<ReceiptDocument, ReceiptResponse>();               
             CreateMap<ReceiptItem, ReceiptItemResponse>()
                 .ForMember(dest => dest.ResourceName, opt => opt.MapFrom(src => src.Resource.Name))
                 .ForMember(dest => dest.UnitName, opt => opt.MapFrom(src => src.Unit.Name));
 
             CreateMap<ReceiptCreateRequest, ReceiptDocument>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date.UtcDateTime));
 
             CreateMap<ReceiptItemRequest, ReceiptItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -26,7 +26,7 @@ namespace NexusStock.WebAPI.Mapping
 
             CreateMap<ReceiptUpdateRequest, ReceiptDocument>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date));
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.Date.UtcDateTime));
         }
     }
 }

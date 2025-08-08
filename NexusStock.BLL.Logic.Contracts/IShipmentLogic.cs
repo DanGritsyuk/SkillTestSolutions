@@ -11,8 +11,8 @@ namespace NexusStock.BLL.Logic.Contracts
         Task SignShipmentAsync(int id);
         Task RevokeShipmentAsync(int id);
         Task<IEnumerable<ShipmentDocument>> GetFilteredShipmentsAsync(
-            DateTime? startDate,
-            DateTime? endDate,
+            DateTimeOffset? startDate,
+            DateTimeOffset? endDate,
             IEnumerable<int> clientIds,
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds);

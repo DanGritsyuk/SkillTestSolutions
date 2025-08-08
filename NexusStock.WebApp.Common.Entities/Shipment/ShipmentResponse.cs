@@ -6,7 +6,7 @@
         public string Number { get; set; }
         public int ClientId { get; set; }
         public string ClientName { get; set; }
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
         public bool IsSigned { get; set; }
         public List<ShipmentItemResponse> Items { get; set; } = new();
 

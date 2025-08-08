@@ -10,7 +10,7 @@ namespace NexusStock.DAL.Repository
 
         public async Task<bool> IsNameUniqueAsync(string name, int? excludeId = null)
         {
-            return !await _dbSet
+            return !await _context.Resources
                 .Where(r => r.Name == name && (excludeId == null || r.Id != excludeId.Value))
                 .AnyAsync();
         }

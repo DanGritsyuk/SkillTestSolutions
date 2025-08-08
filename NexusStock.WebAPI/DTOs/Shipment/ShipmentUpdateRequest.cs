@@ -8,7 +8,7 @@ namespace NexusStock.WebAPI.DTOs.Shipment
         public string Number { get; set; }
 
         [Required(ErrorMessage = "Дата документа обязательна")]
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
 
         [Required(ErrorMessage = "Клиент обязателен")]
         [Range(1, int.MaxValue, ErrorMessage = "Выберите клиента")]

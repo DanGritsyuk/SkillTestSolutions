@@ -121,7 +121,7 @@ else
                     {
                         <tr>
                             <td>@receipt.Number</td>
-                            <td>@receipt.Date.ToString("dd.MM.yyyy")</td>
+                            <td>@receipt.Date.LocalDateTime.ToString("dd.MM.yyyy")</td>
                             <td>
                                 <button class="btn btn-link p-0 text-decoration-none"
                                         @onclick="() => ToggleDetails(receipt.Id)">
@@ -352,7 +352,7 @@ else
     {
         currentReceipt = new ReceiptCreateRequest
         {
-            Date = DateTime.Now,
+            Date = DateTimeOffset.Now,
             Items = new List<ReceiptItemRequest>()
         };
         isEditing = false;

@@ -8,7 +8,7 @@ namespace NexusStock.WebAPI.DTOs.Receipt
         public string Number { get; set; }
 
         [Required(ErrorMessage = "Дата документа обязательна")]
-        public DateTime Date { get; set; } = DateTime.Today;
+        public DateTimeOffset Date { get; set; } = DateTimeOffset.Now;
 
         public List<ReceiptItemRequest> Items { get; set; } = new();
     }

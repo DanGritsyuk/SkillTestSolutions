@@ -86,8 +86,8 @@ namespace NexusStock.BLL.Logic
         }
 
         public async Task<IEnumerable<ReceiptDocument>> GetFilteredReceiptsAsync(
-            DateTime? startDate,
-            DateTime? endDate,
+            DateTimeOffset? startDate,
+            DateTimeOffset? endDate,
             IEnumerable<int> documentIds,
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds)

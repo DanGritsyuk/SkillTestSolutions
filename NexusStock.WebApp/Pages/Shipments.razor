@@ -439,7 +439,7 @@ else
     {
         currentShipment = new ShipmentCreateRequest
         {
-            Date = DateTime.Today,
+            Date = DateTimeOffset.Now,
             Items = new List<ShipmentItemRequest>()
         };
         isEditing = false;
