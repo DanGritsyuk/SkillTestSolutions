@@ -5,8 +5,15 @@ using AutoMapper;
 
 namespace NexusStock.WebAPI.Controllers
 {
+    /// <summary>
+    /// API версии 1.0 для управления складскими остатками
+    /// </summary>
+    /// <remarks>
+    /// Временные метки возвращаются в UTC формате
+    /// </remarks>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class StockController : ControllerBase
     {
         private readonly IStockLogic _stockLogic;
@@ -23,7 +30,21 @@ namespace NexusStock.WebAPI.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
+        /// <summary>
+        /// Получение складских остатков с фильтрацией
+        /// </summary>
+        /// <remarks>
+        /// Пример запроса:
+        /// GET /api/v1.0/stock?resourceIds=1,2,3&amp;unitIds=5,6
+        /// 
+        /// Возвращаемые данные:
+        /// - Все даты представлены в UTC формате
+        /// - Остатки отсортированы по наименованию ресурса
+        /// </remarks>
+        /// <param name="filter">Параметры фильтрации (resourceIds, unitIds)</param>
+        /// <response code="200">Возвращает список складских остатков</response>
+        /// <response code="500">Произошла внутренняя ошибка сервера</response>
+        [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<StockBalanceResponse>>> GetFiltered(
             [FromQuery] StockFilterRequest filter)
         {

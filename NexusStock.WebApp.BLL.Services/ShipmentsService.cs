@@ -39,7 +39,7 @@ namespace NexusStock.WebApp.BLL.Services
 
                 var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
                 return await _httpClient.GetFromJsonAsync<IEnumerable<ShipmentResponse>>(
-                    $"api/shipments/get?{queryString}");
+                    $"shipments/get?{queryString}");
             }
             catch (Exception ex)
             {
@@ -50,28 +50,28 @@ namespace NexusStock.WebApp.BLL.Services
 
         public async Task CreateShipmentAsync(ShipmentCreateRequest request)
         {
-            await _httpClient.PostAsJsonAsync("api/shipments/create", request);
+            await _httpClient.PostAsJsonAsync("shipments/create", request);
         }
 
         public async Task UpdateShipmentAsync(ShipmentUpdateRequest request)
         {
-            await _httpClient.PutAsJsonAsync($"api/shipments/update/{request.Id}", request);
+            await _httpClient.PutAsJsonAsync($"shipments/update/{request.Id}", request);
         }
 
         public async Task DeleteShipmentAsync(int id)
         {
-            await _httpClient.DeleteAsync($"api/shipments/delete/{id}");
+            await _httpClient.DeleteAsync($"shipments/delete/{id}");
         }
 
         public async Task SignShipmentAsync(int id)
         {
-            await _httpClient.PatchAsync("api/shipments/sign",
+            await _httpClient.PatchAsync("shipments/sign",
                 JsonContent.Create(new ShipmentSignRequest { Id = id }));
         }
 
         public async Task RevokeShipmentAsync(int id)
         {
-            await _httpClient.PatchAsync("api/shipments/revoke",
+            await _httpClient.PatchAsync("shipments/revoke",
                 JsonContent.Create(new ShipmentSignRequest { Id = id }));
         }
     }

@@ -21,7 +21,7 @@ namespace NexusStock.WebApp.BLL.Services
             try
             {
                 return await _httpClient.GetFromJsonAsync<IEnumerable<ClientResponse>>(
-                    $"api/clients/get?includeArchived={includeArchived}");
+                    $"clients/get?includeArchived={includeArchived}");
             }
             catch (Exception ex)
             {
@@ -32,7 +32,7 @@ namespace NexusStock.WebApp.BLL.Services
 
         public async Task CreateClientAsync(ClientCreateRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/clients/create", request);
+            var response = await _httpClient.PostAsJsonAsync("clients/create", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -42,7 +42,7 @@ namespace NexusStock.WebApp.BLL.Services
 
         public async Task UpdateClientAsync(ClientUpdateRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"api/clients/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"clients/update/{request.Id}", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -52,15 +52,16 @@ namespace NexusStock.WebApp.BLL.Services
 
         public async Task ToggleClientStatusAsync(int id)
         {
-            var response = await _httpClient.PatchAsync(
-                "api/clients/toggle-status",
-                JsonContent.Create(new { Id = id })
-            );
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                var error = await response.Content.ReadAsStringAsync();
-                throw new ApplicationException(error);
+                var response = await _httpClient.PatchAsync($"clients/toggle-status/{id}", null);
+
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+                throw;
             }
         }
     }

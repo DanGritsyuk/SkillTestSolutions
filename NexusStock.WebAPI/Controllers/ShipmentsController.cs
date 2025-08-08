@@ -7,8 +7,15 @@ using AutoMapper;
 
 namespace NexusStock.WebAPI.Controllers
 {
+    /// <summary>
+    /// API версии 1.0 для управления документами отгрузки
+    /// </summary>
+    /// <remarks>
+    /// Все операции с датами выполняются исключительно в формате UTC.
+    /// </remarks>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class ShipmentsController : ControllerBase
     {
         private readonly IShipmentLogic _shipmentLogic;
@@ -25,6 +32,16 @@ namespace NexusStock.WebAPI.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Получает отфильтрованный список документов отгрузки
+        /// </summary>
+        /// <param name="filter">Параметры фильтрации</param>
+        /// <remarks>
+        /// Все даты автоматически конвертируются в UTC
+        /// Сервер автоматически конвертирует входящие даты в UTC.
+        /// </remarks>
+        /// <response code="200">Успешный возврат списка отгрузок</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<ShipmentResponse>>> GetFiltered(
             [FromQuery] ShipmentFilterRequest filter)
@@ -48,6 +65,13 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает документ отгрузки по ID
+        /// </summary>
+        /// <param name="id">Идентификатор документа отгрузки</param>
+        /// <response code="200">Документ найден</response>
+        /// <response code="404">Документ не найден</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpGet("get/{id}")]
         public async Task<ActionResult<ShipmentResponse>> GetById(int id)
         {
@@ -67,6 +91,16 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Создает новый документ отгрузки
+        /// </summary>
+        /// <param name="request">Данные для создания документа</param>
+        /// <remarks>
+        /// Временные метки автоматически конвертируются в UTC
+        /// </remarks>
+        /// <response code="201">Документ успешно создан</response>
+        /// <response code="400">Ошибка валидации</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] ShipmentCreateRequest request)
         {
@@ -92,6 +126,20 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Обновляет существующий документ отгрузки
+        /// </summary>
+        /// <param name="id">Идентификатор документа</param>
+        /// <param name="request">Данные для обновления</param>
+        /// <remarks>
+        /// Ограничения:
+        /// - Нельзя обновлять подписанные документы
+        /// - Все даты автоматически конвертируются в UTC
+        /// </remarks>
+        /// <response code="204">Документ обновлен</response>
+        /// <response code="400">Ошибка валидации или документ подписан</response>
+        /// <response code="404">Документ не найден</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPut("update/{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] ShipmentUpdateRequest request)
         {
@@ -109,7 +157,6 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Документ подписан и не может быть изменен
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
@@ -119,6 +166,18 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Удаляет документ отгрузки
+        /// </summary>
+        /// <param name="id">Идентификатор документа</param>
+        /// <remarks>
+        /// Ограничения:
+        /// - Нельзя удалять подписанные документы
+        /// </remarks>
+        /// <response code="204">Документ удален</response>
+        /// <response code="400">Документ подписан</response>
+        /// <response code="404">Документ не найден</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -129,7 +188,6 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Документ подписан и не может быть удален
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
@@ -139,6 +197,20 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Подписывает документ отгрузки
+        /// </summary>
+        /// <param name="request">Данные для подписания</param>
+        /// <remarks>
+        /// Проверки при подписании:
+        /// - Достаточность товара на складе
+        /// - Документ должен существовать
+        /// - Документ не должен быть уже подписан
+        /// </remarks>
+        /// <response code="204">Документ подписан</response>
+        /// <response code="400">Недостаточно товара</response>
+        /// <response code="404">Документ не найден</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPatch("sign")]
         public async Task<IActionResult> Sign([FromBody] ShipmentSignRequest request)
         {
@@ -149,7 +221,6 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (ValidationException ex)
             {
-                // Недостаточно товара на складе
                 return BadRequest(ex.Message);
             }
             catch (InvalidOperationException)
@@ -163,6 +234,18 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Отзывает подпись документа отгрузки
+        /// </summary>
+        /// <param name="request">Данные для отзыва</param>
+        /// <remarks>
+        /// Требования:
+        /// - Документ должен быть подписан
+        /// - Документ должен существовать
+        /// </remarks>
+        /// <response code="204">Подпись отозвана</response>
+        /// <response code="404">Документ не найден</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpPatch("revoke")]
         public async Task<IActionResult> Revoke([FromBody] ShipmentSignRequest request)
         {

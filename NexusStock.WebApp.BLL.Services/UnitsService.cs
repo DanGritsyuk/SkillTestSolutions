@@ -19,9 +19,9 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
         {
             try
             {
-                _logger.LogDebug($"Request URL: {_httpClient.BaseAddress}api/Units/get?includeArchived={includeArchived}");
+                _logger.LogDebug($"Request URL: {_httpClient.BaseAddress}Units/get?includeArchived={includeArchived}");
                 return await _httpClient.GetFromJsonAsync<IEnumerable<UnitResponse>>(
-                    $"api/units/get?includeArchived={includeArchived}");
+                    $"units/get?includeArchived={includeArchived}");
             }
             catch (Exception ex)
             {
@@ -32,7 +32,7 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
 
         public async Task CreateUnitAsync(UnitCreateRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/units/create", request);
+            var response = await _httpClient.PostAsJsonAsync("units/create", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -42,7 +42,7 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
 
         public async Task UpdateUnitAsync(UnitUpdateRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"api/units/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"units/update/{request.Id}", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -52,15 +52,16 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
 
         public async Task ToggleUnitStatusAsync(int id)
         {
-            var response = await _httpClient.PatchAsync(
-                "api/units/toggle-status",
-                JsonContent.Create(new { Id = id })
-            );
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                var error = await response.Content.ReadAsStringAsync();
-                throw new ApplicationException(error);
+                var response = await _httpClient.PatchAsync($"units/toggle-status/{id}", null);
+
+                response.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+                throw;
             }
         }
     }

@@ -35,7 +35,7 @@ namespace NexusStock.WebApp.BLL.Services
                 
                 var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
                 return await _httpClient.GetFromJsonAsync<IEnumerable<ReceiptResponse>>(
-                    $"api/receipts/get?{queryString}");
+                    $"receipts/get?{queryString}");
             }
             catch (Exception ex)
             {
@@ -46,19 +46,19 @@ namespace NexusStock.WebApp.BLL.Services
 
         public async Task CreateReceiptAsync(ReceiptCreateRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/receipts/create", request);
+            var response = await _httpClient.PostAsJsonAsync("receipts/create", request);
             response.EnsureSuccessStatusCode();
         }
 
         public async Task UpdateReceiptAsync(ReceiptUpdateRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"api/receipts/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"receipts/update/{request.Id}", request);
             response.EnsureSuccessStatusCode();
         }
 
         public async Task DeleteReceiptAsync(int id)
         {
-            var response = await _httpClient.DeleteAsync($"api/receipts/delete/{id}");
+            var response = await _httpClient.DeleteAsync($"receipts/delete/{id}");
             response.EnsureSuccessStatusCode();
         }
     }

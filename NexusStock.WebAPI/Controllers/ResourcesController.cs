@@ -7,8 +7,16 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NexusStock.WebAPI.Controllers
 {
+    /// <summary>
+    /// API версии 1.0 для управления ресурсами (товарами/материалами)
+    /// </summary>
+    /// <remarks>
+    /// Все операции с ресурсами используют UTC время для любых временных меток.
+    /// Сервер автоматически обрабатывает все даты в UTC формате.
+    /// </remarks>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class ResourcesController : ControllerBase
     {
         private readonly IResourceLogic _resourceLogic;
@@ -25,6 +33,18 @@ namespace NexusStock.WebAPI.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Получение списка ресурсов
+        /// </summary>
+        /// <param name="includeArchived">Включать архивные ресурсы (true/false)</param>
+        /// <response code="200">Успешно возвращен список ресурсов</response>
+        /// <response code="500">Внутренняя ошибка сервера</response>
+        /// <remarks>
+        /// Возвращает:
+        /// - Только активные ресурсы по умолчанию
+        /// - Все ресурсы (включая архивные) при includeArchived=true
+        /// - Все даты связанные с ресурсами представлены в UTC
+        /// </remarks>
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<ResourceResponse>>> GetAll(bool includeArchived = false)
         {
@@ -43,6 +63,19 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Получение ресурса по идентификатору
+        /// </summary>
+        /// <param name="id">Идентификатор ресурса</param>
+        /// <response code="200">Успешно возвращен ресурс</response>
+        /// <response code="404">Ресурс не найден</response>
+        /// <response code="500">Внутренняя ошибка сервера</response>
+        /// <remarks>
+        /// Возвращает полную информацию о ресурсе включая:
+        /// - Базовые характеристики
+        /// - Историю изменений (даты в UTC)
+        /// - Статус (активный/архивный)
+        /// </remarks>
         [HttpGet("get/{id}")]
         public async Task<ActionResult<ResourceResponse>> GetById(int id)
         {
@@ -60,6 +93,19 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Создание нового ресурса
+        /// </summary>
+        /// <param name="request">Данные для создания ресурса</param>
+        /// <response code="201">Ресурс успешно создан</response>
+        /// <response code="400">Некорректные входные данные</response>
+        /// <response code="500">Внутренняя ошибка сервера</response>
+        /// <remarks>
+        /// Особенности:
+        /// - Дата создания устанавливается автоматически (UTC время сервера)
+        /// - Все входящие даты должны быть в UTC формате
+        /// - Ресурс создается в активном состоянии
+        /// </remarks>
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] ResourceCreateRequest request)
         {
@@ -84,6 +130,21 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Обновление существующего ресурса
+        /// </summary>
+        /// <param name="id">Идентификатор ресурса</param>
+        /// <param name="request">Обновленные данные ресурса</param>
+        /// <response code="204">Ресурс успешно обновлен</response>
+        /// <response code="400">Некорректные входные данные</response>
+        /// <response code="404">Ресурс не найден</response>
+        /// <response code="500">Внутренняя ошибка сервера</response>
+        /// <remarks>
+        /// Особенности обновления:
+        /// - Дата последнего обновления устанавливается автоматически (UTC)
+        /// - Все временные метки должны передаваться в UTC
+        /// - Нельзя обновить архивный ресурс
+        /// </remarks>
         [HttpPut("update/{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] ResourceUpdateRequest request)
         {
@@ -109,12 +170,25 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpPatch("toggle-status")]
-        public async Task<IActionResult> ToggleStatus([FromBody] ResourceStatusRequest request)
+        /// <summary>
+        /// Переключение статуса ресурса (активный/архивный)
+        /// </summary>
+        /// <param name="id">Идентификатор ресурса</param>
+        /// <response code="204">Статус успешно изменен</response>
+        /// <response code="404">Ресурс не найден</response>
+        /// <response code="500">Внутренняя ошибка сервера</response>
+        /// <remarks>
+        /// Особенности:
+        /// - Архивация не удаляет ресурс, а помечает его как неактивный
+        /// - Дата изменения статуса фиксируется в UTC времени
+        /// - Архивные ресурсы не участвуют в основных операциях
+        /// </remarks>
+        [HttpPatch("toggle-status/{id}")]
+        public async Task<IActionResult> ToggleStatus(int id)
         {
             try
             {
-                await _resourceLogic.ToggleResourceStatusAsync(request.Id);
+                await _resourceLogic.ToggleResourceStatusAsync(id);
                 return NoContent();
             }
             catch (InvalidOperationException)

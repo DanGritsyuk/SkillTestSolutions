@@ -7,8 +7,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NexusStock.WebAPI.Controllers
 {
+    /// <summary>
+    /// API версии 1.0 для управления клиентами
+    /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class ClientsController : ControllerBase
     {
         private readonly IClientLogic _clientLogic;
@@ -25,6 +29,15 @@ namespace NexusStock.WebAPI.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Получение списка клиентов
+        /// </summary>
+        /// <param name="includeArchived">Включить архивные записи (true/false)</param>
+        /// <response code="200">Успешно возвращен список клиентов</response>
+        /// <response code="500">Ошибка сервера</response>
+        /// <remarks>
+        /// Сервер работает исключительно с UTC временем. Все даты возвращаются в UTC формате.
+        /// </remarks>
         [HttpGet("get")]
         public async Task<ActionResult<IEnumerable<ClientResponse>>> GetAll(bool includeArchived = false)
         {
@@ -43,6 +56,13 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Получение клиента по идентификатору
+        /// </summary>
+        /// <param name="id">Идентификатор клиента</param>
+        /// <response code="200">Успешно возвращен клиент</response>
+        /// <response code="404">Клиент не найден</response>
+        /// <response code="500">Ошибка сервера</response>
         [HttpGet("get/{id}")]
         public async Task<ActionResult<ClientResponse>> GetById(int id)
         {
@@ -60,6 +80,16 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Создание нового клиента
+        /// </summary>
+        /// <param name="request">Данные для создания клиента</param>
+        /// <response code="201">Клиент успешно создан</response>
+        /// <response code="400">Некорректные входные данные</response>
+        /// <response code="500">Ошибка сервера</response>
+        /// <remarks>
+        /// Даты должны передаваться в UTC формате. Сервер автоматически конвертирует все даты в UTC.
+        /// </remarks>
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] ClientCreateRequest request)
         {
@@ -84,6 +114,18 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Обновление данных клиента
+        /// </summary>
+        /// <param name="id">Идентификатор клиента</param>
+        /// <param name="request">Обновленные данные клиента</param>
+        /// <response code="204">Данные успешно обновлены</response>
+        /// <response code="400">Некорректные входные данные</response>
+        /// <response code="404">Клиент не найден</response>
+        /// <response code="500">Ошибка сервера</response>
+        /// <remarks>
+        /// Все временные метки автоматически конвертируются в UTC при обработке на сервере.
+        /// </remarks>
         [HttpPut("update/{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] ClientUpdateRequest request)
         {
@@ -109,12 +151,23 @@ namespace NexusStock.WebAPI.Controllers
             }
         }
 
-        [HttpPatch("toggle-status")]
-        public async Task<IActionResult> ToggleStatus([FromBody] ClientStatusRequest request)
+        /// <summary>
+        /// Переключение статуса клиента (активный/архивный)
+        /// </summary>
+        /// <param name="id">Идентификатор клиента</param>
+        /// <response code="204">Статус успешно изменен</response>
+        /// <response code="404">Клиент не найден</response>
+        /// <response code="500">Ошибка сервера</response>
+        /// <remarks>
+        /// Архивация не удаляет клиента, а только помечает его как неактивный.
+        /// Последнее изменение даты автоматически устанавливается в UTC времени сервера.
+        /// </remarks>
+        [HttpPatch("toggle-status/{id}")]
+        public async Task<IActionResult> ToggleStatus(int id)
         {
             try
             {
-                await _clientLogic.ToggleClientStatusAsync(request.Id);
+                await _clientLogic.ToggleClientStatusAsync(id);
                 return NoContent();
             }
             catch (InvalidOperationException)
@@ -123,7 +176,7 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при изменении статуса клиента ID: {request.Id}");
+                _logger.LogError(ex, $"Ошибка при изменении статуса клиента ID: {id}");
                 return StatusCode(500, "Внутренняя ошибка сервера");
             }
         }

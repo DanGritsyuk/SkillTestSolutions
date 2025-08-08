@@ -29,7 +29,7 @@ namespace NexusStock.WebApp.BLL.Services
 
                 var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
                 return await _httpClient.GetFromJsonAsync<IEnumerable<StockBalanceResponse>>(
-                    $"api/stock?{queryString}");
+                    $"stock?{queryString}");
             }
             catch (Exception ex)
             {
