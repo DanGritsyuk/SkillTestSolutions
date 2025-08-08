@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using NexusStock.BLL.Logic;
 using NexusStock.BLL.Logic.Contracts;
 using NexusStock.Common.Entities;
 using NexusStock.WebAPI.DTOs.Unit;

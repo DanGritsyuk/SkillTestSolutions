@@ -1,4 +1,6 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using NexusStock.DAL.Repository;
 using NexusStock.WebAPI.Extensions;
@@ -15,6 +17,13 @@ namespace NexusStock.WebAPI
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddApiVersioning(options =>
+            {
+                options.ReportApiVersions = true;
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+            });
 
             builder.Services.AddAutoMapper(cfg => { }, typeof(ClientProfile).Assembly);
 

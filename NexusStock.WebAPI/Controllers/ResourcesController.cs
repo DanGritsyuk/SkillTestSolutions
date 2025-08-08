@@ -197,7 +197,7 @@ namespace NexusStock.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при изменении статуса ресурса ID: {request.Id}");
+                _logger.LogError(ex, $"Ошибка при изменении статуса ресурса ID: {id}");
                 return StatusCode(500, "Внутренняя ошибка сервера");
             }
         }
