@@ -1,10 +1,10 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using NexusStock.DAL.Repository;
 using NexusStock.WebAPI.Extensions;
 using NexusStock.WebAPI.Mapping;
+using NexusStock.WebAPI.ModelBinders;
 
 namespace NexusStock.WebAPI
 {
@@ -14,7 +14,11 @@ namespace NexusStock.WebAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers(options =>
+            {
+                options.ModelBinderProviders.Insert(0, new DateTimeOffsetModelBinderProvider());
+            });
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

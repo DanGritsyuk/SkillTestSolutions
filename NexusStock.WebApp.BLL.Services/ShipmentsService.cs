@@ -1,4 +1,6 @@
-﻿using NexusStock.WebApp.BLL.Services.Contracts;
+﻿using Microsoft.Extensions.Logging;
+using NexusStock.WebApp.BLL.Services.Builders;
+using NexusStock.WebApp.BLL.Services.Contracts;
 using NexusStock.WebApp.Common.Entities.Shipment;
 using System.Net.Http.Json;
 
@@ -7,43 +9,40 @@ namespace NexusStock.WebApp.BLL.Services
     public class ShipmentsService : IShipmentsService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<ShipmentsService> _logger;
 
-        public ShipmentsService(HttpClient httpClient)
+        public ShipmentsService(HttpClient httpClient, ILogger<ShipmentsService> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
+
         }
 
         public async Task<IEnumerable<ShipmentResponse>> GetFilteredShipmentsAsync(ShipmentFilterRequest filter)
         {
             try
             {
-                var queryParams = new Dictionary<string, string>();
-
-                if (filter.StartDate.HasValue)
-                    queryParams.Add("startDate", filter.StartDate.Value.ToString("yyyy-MM-dd"));
-
-                if (filter.EndDate.HasValue)
-                    queryParams.Add("endDate", filter.EndDate.Value.ToString("yyyy-MM-dd"));
-
-                if (filter.ClientIds?.Count > 0)
-                    queryParams.Add("clientIds", string.Join(",", filter.ClientIds));
-
-                if (filter.ResourceIds?.Count > 0)
-                    queryParams.Add("resourceIds", string.Join(",", filter.ResourceIds));
-
-                if (filter.UnitIds?.Count > 0)
-                    queryParams.Add("unitIds", string.Join(",", filter.UnitIds));
+                var builder = new QueryBuilder(_httpClient.BaseAddress!, "shipments/get", _logger)
+                    .WithNameNormalization()
+                    .AddDateParam("startDate", filter.StartDate)
+                    .AddDateParam("endDate", filter.EndDate)
+                    .AddListParam("clientIds", filter.ClientIds)
+                    .AddListParam("resourceIds", filter.ResourceIds)
+                    .AddListParam("unitIds", filter.UnitIds);
 
                 //if (filter.IsSigned.HasValue)
-                //    queryParams.Add("isSigned", filter.IsSigned.Value.ToString());
+                //{
+                //    builder.AddBoolParam("isSigned", filter.IsSigned.Value);
+                //}
 
-                var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
-                return await _httpClient.GetFromJsonAsync<IEnumerable<ShipmentResponse>>(
-                    $"shipments/get?{queryString}");
+                var url = builder.Build();
+
+                return await _httpClient.GetFromJsonAsync<IEnumerable<ShipmentResponse>>(url)
+                    ?? throw new NullReferenceException("Не удалось получить данные об отгрузках");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при загрузке документов: {ex.Message}");
+                _logger.LogError(ex, "Ошибка при загрузке отгрузок");
                 return Enumerable.Empty<ShipmentResponse>();
             }
         }

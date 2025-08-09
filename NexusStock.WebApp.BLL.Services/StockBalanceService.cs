@@ -1,4 +1,6 @@
-﻿using NexusStock.WebApp.BLL.Services.Contracts;
+﻿using Microsoft.Extensions.Logging;
+using NexusStock.WebApp.BLL.Services.Builders;
+using NexusStock.WebApp.BLL.Services.Contracts;
 using NexusStock.WebApp.Common.Entities.Balance;
 using System.Net.Http.Json;
 
@@ -7,10 +9,13 @@ namespace NexusStock.WebApp.BLL.Services
     public class StockBalanceService : IStockBalanceService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<ReceiptsService> _logger;
 
-        public StockBalanceService(HttpClient httpClient)
+        public StockBalanceService(HttpClient httpClient,
+            ILogger<ReceiptsService> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<StockBalanceResponse>> GetFilteredStockBalancesAsync(
@@ -19,21 +24,17 @@ namespace NexusStock.WebApp.BLL.Services
         {
             try
             {
-                var queryParams = new Dictionary<string, string>();
+                var url = new QueryBuilder(_httpClient.BaseAddress!, "stock/get", _logger)
+                    .AddListParam("resourceIds", resourceIds)
+                    .AddListParam("unitIds", unitIds)
+                    .Build();
 
-                if (resourceIds?.Count() > 0)
-                    queryParams.Add("resourceIds", string.Join(",", resourceIds));
-
-                if (unitIds?.Count() > 0)
-                    queryParams.Add("unitIds", string.Join(",", unitIds));
-
-                var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
-                return await _httpClient.GetFromJsonAsync<IEnumerable<StockBalanceResponse>>(
-                    $"stock?{queryString}");
+                return await _httpClient.GetFromJsonAsync<IEnumerable<StockBalanceResponse>>(url)
+                    ?? throw new NullReferenceException("Не удалось получить данные о остатках на складе. Ответ от сервера был пустым.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при загрузке складских остатков: {ex.Message}");
+                _logger.LogError($"Ошибка при загрузке складских остатков: {ex.Message}");
                 return Enumerable.Empty<StockBalanceResponse>();
             }
         }

@@ -19,9 +19,8 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
         {
             try
             {
-                _logger.LogDebug($"Request URL: {_httpClient.BaseAddress}Units/get?includeArchived={includeArchived}");
-                return await _httpClient.GetFromJsonAsync<IEnumerable<UnitResponse>>(
-                    $"units/get?includeArchived={includeArchived}");
+                return await _httpClient.GetFromJsonAsync<IEnumerable<UnitResponse>>($"units/get?includeArchived={includeArchived}")
+                    ?? throw new NullReferenceException("Не удалось получить данные об единицах измерения. Ответ от сервера был пустым."); ;
             }
             catch (Exception ex)
             {

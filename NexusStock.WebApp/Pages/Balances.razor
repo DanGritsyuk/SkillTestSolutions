@@ -48,11 +48,11 @@
                     <div class="mb-3">
                         <label class="form-label">Единицы измерения</label>
                         <select class="form-select" multiple size="5" @onchange="OnUnitFilterChange">
-                            @if (allUnits?.Count > 0)
+                            @if (_allUnits?.Count > 0)
                             {
-                                @foreach (var unit in allUnits)
+                                @foreach (var unit in _allUnits)
                                 {
-                                    <option value="@unit.Id" selected="@selectedUnitIds.Contains(unit.Id)">
+                                    <option value="@unit.Id" selected="@_selectedUnitIds.Contains(unit.Id)">
                                         @unit.Name
                                     </option>
                                 }
@@ -116,9 +116,9 @@ else
 @code {
     private List<StockBalanceResponse> balances = new();
     private List<ResourceResponse> allResources = new();
-    private List<UnitResponse> allUnits = new();
+    private List<UnitResponse> _allUnits = new();
     private List<int> selectedResourceIds = new();
-    private List<int> selectedUnitIds = new();
+    private List<int> _selectedUnitIds = new();
     private bool isLoading = true;
     private bool showFilters = true;
 
@@ -131,11 +131,11 @@ else
     private async Task LoadInitialData()
     {
         allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
-        allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
+        _allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
 
         // Инициализация фильтров - все выбранны по умолчанию
         selectedResourceIds = allResources.Select(r => r.Id).ToList();
-        selectedUnitIds = allUnits.Select(u => u.Id).ToList();
+        _selectedUnitIds = _allUnits.Select(u => u.Id).ToList();
     }
 
     private async Task LoadBalances()
@@ -147,7 +147,7 @@ else
 
             balances = (await StockService.GetFilteredStockBalancesAsync(
                 selectedResourceIds,
-                selectedUnitIds
+                _selectedUnitIds
             ))?.ToList() ?? new();
         }
         finally
@@ -174,11 +174,11 @@ else
         var selected = e.Value as string[];
         if (selected != null)
         {
-            selectedUnitIds = selected.Select(int.Parse).ToList();
+            _selectedUnitIds = selected.Select(int.Parse).ToList();
         }
         else
         {
-            selectedUnitIds = new List<int>();
+            _selectedUnitIds = new List<int>();
         }
     }
 
@@ -190,7 +190,7 @@ else
     private async Task ResetFilters()
     {
         selectedResourceIds = allResources.Select(r => r.Id).ToList();
-        selectedUnitIds = allUnits.Select(u => u.Id).ToList();
+        _selectedUnitIds = _allUnits.Select(u => u.Id).ToList();
         await LoadBalances();
     }
 

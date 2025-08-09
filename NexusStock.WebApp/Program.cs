@@ -27,7 +27,7 @@ namespace NexusStock.WebApp
 
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri("https://localhost:7140/api/v1/")
+                BaseAddress = new Uri("https://localhost:7140/api/v1.0/")
             });
 
 

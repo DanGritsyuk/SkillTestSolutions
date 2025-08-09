@@ -1,6 +1,7 @@
-﻿using NexusStock.WebApp.BLL.Services.Contracts;
+﻿using Microsoft.Extensions.Logging;
+using NexusStock.WebApp.BLL.Services.Builders;
+using NexusStock.WebApp.BLL.Services.Contracts;
 using NexusStock.WebApp.Common.Entities.Receipt;
-using System.Net.Http;
 using System.Net.Http.Json;
 
 namespace NexusStock.WebApp.BLL.Services
@@ -8,38 +9,36 @@ namespace NexusStock.WebApp.BLL.Services
     public class ReceiptsService : IReceiptsService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<ReceiptsService> _logger;
 
-        public ReceiptsService(HttpClient httpClient)
+        public ReceiptsService(HttpClient httpClient,
+            ILogger<ReceiptsService> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<ReceiptResponse>> GetFilteredReceiptsAsync(ReceiptFilterRequest filter)
         {
+            const string FORMAT_TIME = "yyyy-MM-ddTHH:mm:ss.fffzzz";
+
             try
             {
-                // Сбор параметров запроса
-                var queryParams = new Dictionary<string, string>();
+                var url = new QueryBuilder(_httpClient.BaseAddress!, "receipts/get", _logger)
+                    .WithNameNormalization()
+                    .AddDateParam("startDate", filter.StartDate, FORMAT_TIME)
+                    .AddDateParam("endDate", filter.EndDate, FORMAT_TIME)
+                    .AddListParam("documentIds", filter.DocumentIds)
+                    .AddListParam("resourceIds", filter.ResourceIds)
+                    .AddListParam("unitIds", filter.UnitIds)
+                    .Build();
 
-                if (filter.StartDate.HasValue)
-                    queryParams.Add("startDate", filter.StartDate.Value.ToString("yyyy-MM-dd"));
-
-                if (filter.EndDate.HasValue)
-                    queryParams.Add("endDate", filter.EndDate.Value.ToString("yyyy-MM-dd"));
-
-                if (filter.ResourceIds?.Count > 0)
-                    queryParams.Add("resourceIds", string.Join(",", filter.ResourceIds));
-
-                if (filter.UnitIds?.Count > 0)
-                    queryParams.Add("unitIds", string.Join(",", filter.UnitIds));
-                
-                var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync();
-                return await _httpClient.GetFromJsonAsync<IEnumerable<ReceiptResponse>>(
-                    $"receipts/get?{queryString}");
+                return await _httpClient.GetFromJsonAsync<IEnumerable<ReceiptResponse>>(url)
+                    ?? throw new NullReferenceException("Не удалось получить данные о поступлениях");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при загрузке документов: {ex.Message}");
+                _logger.LogError(ex, "Ошибка при загрузке документов");
                 return Enumerable.Empty<ReceiptResponse>();
             }
         }

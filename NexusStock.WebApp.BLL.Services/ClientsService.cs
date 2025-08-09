@@ -21,7 +21,8 @@ namespace NexusStock.WebApp.BLL.Services
             try
             {
                 return await _httpClient.GetFromJsonAsync<IEnumerable<ClientResponse>>(
-                    $"clients/get?includeArchived={includeArchived}");
+                    $"clients/get?includeArchived={includeArchived}")
+                    ?? throw new NullReferenceException("Не удалось получить данные о клиентах. Ответ от сервера был пустым.");
             }
             catch (Exception ex)
             {

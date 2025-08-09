@@ -23,35 +23,35 @@
         <button class="btn btn-link text-decoration-none w-100 text-start d-flex justify-content-between align-items-center"
                 @onclick="ToggleFilterPanel">
             <span class="fw-bold">Фильтры</span>
-            <i class="bi bi-chevron-@(showFilters ? "up" : "down")"></i>
+            <i class="bi bi-chevron-@(_showFilters ? "up" : "down")"></i>
         </button>
     </div>
 
-    @if (showFilters)
+    @if (_showFilters)
     {
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label">Дата с</label>
-                        <InputDate class="form-control" @bind-Value="filter.StartDate" />
+                        <InputDate class="form-control" @bind-Value="_filter.StartDate" />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label">Дата по</label>
-                        <InputDate class="form-control" @bind-Value="filter.EndDate" />
+                        <InputDate class="form-control" @bind-Value="_filter.EndDate" />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label">Ресурсы</label>
                         <select class="form-select" multiple size="3" @onchange="OnResourceFilterChange">
-                            @if (allResources?.Count > 0)
+                            @if (_allResources?.Count > 0)
                             {
-                                @foreach (var resource in allResources)
+                                @foreach (var resource in _allResources)
                                 {
-                                    <option value="@resource.Id" selected="@selectedResourceIds.Contains(resource.Id)">
+                                    <option value="@resource.Id" selected="@_selectedResourceIds.Contains(resource.Id)">
                                         @resource.Name
                                     </option>
                                 }
@@ -63,11 +63,11 @@
                     <div class="mb-3">
                         <label class="form-label">Единицы измерения</label>
                         <select class="form-select" multiple size="3" @onchange="OnUnitFilterChange">
-                            @if (allUnits?.Count > 0)
+                            @if (_allUnits?.Count > 0)
                             {
-                                @foreach (var unit in allUnits)
+                                @foreach (var unit in _allUnits)
                                 {
-                                    <option value="@unit.Id" selected="@selectedUnitIds.Contains(unit.Id)">
+                                    <option value="@unit.Id" selected="@_selectedUnitIds.Contains(unit.Id)">
                                         @unit.Name
                                     </option>
                                 }
@@ -88,7 +88,7 @@
     }
 </div>
 
-@if (isLoading)
+@if (_isLoading)
 {
     <div class="d-flex justify-content-center my-5">
         <div class="spinner-border text-primary" role="status">
@@ -96,7 +96,7 @@
         </div>
     </div>
 }
-else if (stockReceipts.Count == 0)
+else if (_receipts.Count == 0)
 {
     <div class="alert alert-info">
         <i class="bi bi-info-circle me-2"></i> Нет документов поступления
@@ -117,7 +117,7 @@ else
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var receipt in stockReceipts)
+                    @foreach (var receipt in _receipts)
                     {
                         <tr>
                             <td>@receipt.Number</td>
@@ -125,7 +125,7 @@ else
                             <td>
                                 <button class="btn btn-link p-0 text-decoration-none"
                                         @onclick="() => ToggleDetails(receipt.Id)">
-                                    @if (expandedReceipts.Contains(receipt.Id))
+                                    @if (_expandedReceipts.Contains(receipt.Id))
                                     {
                                         <i class="bi bi-chevron-down me-1"></i>
                                     }
@@ -153,7 +153,7 @@ else
                             </td>
                         </tr>
 
-                        @if (expandedReceipts.Contains(receipt.Id))
+                        @if (_expandedReceipts.Contains(receipt.Id))
                         {
                             <tr class="bg-light">
                                 <td colspan="5">
@@ -186,32 +186,32 @@ else
     </div>
 }
 
-@if (showForm)
+@if (_showForm)
 {
     <div class="modal fade show" style="display:block; background:rgba(0,0,0,0.5)" @onclick="CloseForm">
         <div class="modal-dialog modal-lg" @onclick:stopPropagation="true">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        @(isEditing ? "Редактирование документа" : "Создание документа")
+                        @(_isEditing ? "Редактирование документа" : "Создание документа")
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseForm"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@currentReceipt" OnValidSubmit="@SaveReceipt">
+                    <EditForm Model="@_currentReceipt" OnValidSubmit="@SaveReceipt">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Номер документа *</label>
-                                <InputText class="form-control" @bind-Value="currentReceipt.Number" />
-                                <ValidationMessage For="@(() => currentReceipt.Number)" />
+                                <InputText class="form-control" @bind-Value="_currentReceipt.Number" />
+                                <ValidationMessage For="@(() => _currentReceipt.Number)" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Дата *</label>
-                                <InputDate class="form-control" @bind-Value="currentReceipt.Date" />
-                                <ValidationMessage For="@(() => currentReceipt.Date)" />
+                                <InputDate class="form-control" @bind-Value="_currentReceipt.Date" />
+                                <ValidationMessage For="@(() => _currentReceipt.Date)" />
                             </div>
                         </div>
 
@@ -233,14 +233,14 @@ else
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @for (int i = 0; i < currentReceipt.Items.Count; i++)
+                                    @for (int i = 0; i < _currentReceipt.Items.Count; i++)
                                     {
-                                        var item = currentReceipt.Items[i];
+                                        var item = _currentReceipt.Items[i];
                                         <tr>
                                             <td>
                                                 <select class="form-select" @bind="item.ResourceId">
                                                     <option value="">Выберите ресурс</option>
-                                                    @foreach (var resource in allResources)
+                                                    @foreach (var resource in _allResources)
                                                     {
                                                         <option value="@resource.Id">@resource.Name</option>
                                                     }
@@ -250,7 +250,7 @@ else
                                             <td>
                                                 <select class="form-select" @bind="item.UnitId">
                                                     <option value="">Выберите единицу</option>
-                                                    @foreach (var unit in allUnits)
+                                                    @foreach (var unit in _allUnits)
                                                     {
                                                         <option value="@unit.Id">@unit.Name</option>
                                                     }
@@ -291,19 +291,20 @@ else
 }
 
 @code {
-    private List<ReceiptResponse> stockReceipts = new();
-    private List<ResourceResponse> allResources = new();
-    private List<UnitResponse> allUnits = new();
-    private List<int> selectedResourceIds = new();
-    private List<int> selectedUnitIds = new();
-    private HashSet<int> expandedReceipts = new();
-    private ReceiptFilterRequest filter = new();
-    private bool isLoading = true;
-    private bool showFilters = true;
-    private bool showForm = false;
-    private bool isEditing = false;
-    private ReceiptCreateRequest currentReceipt = new();
-    private int currentId;
+    private List<ReceiptResponse> _receipts = new();
+    private List<ResourceResponse> _allResources = new();
+    private List<UnitResponse> _allUnits = new();
+    private List<int> _selectedResourceIds = new();
+    private List<int> _selectedUnitIds = new();
+    private HashSet<int> _expandedReceipts = new();
+    private ReceiptFilterRequest _filter = new();
+    private bool _isLoading = true;
+    private bool _showFilters = true;
+    private bool _showForm = false;
+    private bool _isEditing = false;
+    private ReceiptCreateRequest _currentReceipt = new();
+    private int _currentId;
+    private DateTime? _uiDate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -313,58 +314,58 @@ else
 
     private async Task LoadInitialData()
     {
-        allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
-        allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
+        _allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
+        _allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
     }
 
     private async Task LoadReceipts()
     {
         try
         {
-            isLoading = true;
+            _isLoading = true;
             StateHasChanged();
 
             // Преобразование фильтров для API
-            filter.ResourceIds = selectedResourceIds;
-            filter.UnitIds = selectedUnitIds;
+            _filter.ResourceIds = _selectedResourceIds;
+            _filter.UnitIds = _selectedUnitIds;
 
-            stockReceipts = (await ReceiptsService.GetFilteredReceiptsAsync(filter))?.ToList() ?? new();
+            _receipts = (await ReceiptsService.GetFilteredReceiptsAsync(_filter))?.ToList() ?? new();
         }
         finally
         {
-            isLoading = false;
+            _isLoading = false;
         }
     }
 
     private void ToggleDetails(int receiptId)
     {
-        if (expandedReceipts.Contains(receiptId))
+        if (_expandedReceipts.Contains(receiptId))
         {
-            expandedReceipts.Remove(receiptId);
+            _expandedReceipts.Remove(receiptId);
         }
         else
         {
-            expandedReceipts.Add(receiptId);
+            _expandedReceipts.Add(receiptId);
         }
     }
 
     private void ShowCreateForm()
     {
-        currentReceipt = new ReceiptCreateRequest
+        _currentReceipt = new ReceiptCreateRequest
         {
-            Date = DateTimeOffset.Now,
+            Date = DateTime.Now.Date,
             Items = new List<ReceiptItemRequest>()
         };
-        isEditing = false;
-        showForm = true;
+        _isEditing = false;
+        _showForm = true;
     }
 
     private void EditReceipt(ReceiptResponse receipt)
     {
-        currentReceipt = new ReceiptCreateRequest
+        _currentReceipt = new ReceiptCreateRequest
         {
             Number = receipt.Number,
-            Date = receipt.Date,
+            Date = receipt.Date.ToLocalTime().DateTime,
             Items = receipt.Items.Select(i => new ReceiptItemRequest
             {
                 ResourceId = i.ResourceId,
@@ -372,26 +373,26 @@ else
                 Quantity = i.Quantity
             }).ToList()
         };
-        currentId = receipt.Id;
-        isEditing = true;
-        showForm = true;
+        _currentId = receipt.Id;
+        _isEditing = true;
+        _showForm = true;
     }
 
     private void CloseForm()
     {
-        showForm = false;
+        _showForm = false;
     }
 
     private void AddReceiptItem()
     {
-        currentReceipt.Items.Add(new ReceiptItemRequest());
+        _currentReceipt.Items.Add(new ReceiptItemRequest());
     }
 
     private void RemoveReceiptItem(int index)
     {
-        if (currentReceipt.Items.Count > index)
+        if (_currentReceipt.Items.Count > index)
         {
-            currentReceipt.Items.RemoveAt(index);
+            _currentReceipt.Items.RemoveAt(index);
         }
     }
 
@@ -399,22 +400,22 @@ else
     {
         try
         {
-            if (isEditing)
+            if (_isEditing)
             {
                 await ReceiptsService.UpdateReceiptAsync(new ReceiptUpdateRequest
                 {
-                    Id = currentId,
-                    Number = currentReceipt.Number,
-                    Date = currentReceipt.Date,
-                    Items = currentReceipt.Items
+                    Id = _currentId,
+                    Number = _currentReceipt.Number,
+                    Date = _currentReceipt.Date,
+                    Items = _currentReceipt.Items
                 });
             }
             else
             {
-                await ReceiptsService.CreateReceiptAsync(currentReceipt);
+                await ReceiptsService.CreateReceiptAsync(_currentReceipt);
             }
 
-            showForm = false;
+            _showForm = false;
             await LoadReceipts();
         }
         catch (Exception ex)
@@ -434,19 +435,19 @@ else
 
     private void ToggleFilterPanel()
     {
-        showFilters = !showFilters;
+        _showFilters = !_showFilters;
     }
 
     private void OnResourceFilterChange(ChangeEventArgs e)
     {
         var selected = e.Value as string[];
-        selectedResourceIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
+        _selectedResourceIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
     }
 
     private void OnUnitFilterChange(ChangeEventArgs e)
     {
         var selected = e.Value as string[];
-        selectedUnitIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
+        _selectedUnitIds = selected?.Select(int.Parse).ToList() ?? new List<int>();
     }
 
     private async Task ApplyFilters()
@@ -456,9 +457,9 @@ else
 
     private async Task ResetFilters()
     {
-        selectedResourceIds = new List<int>();
-        selectedUnitIds = new List<int>();
-        filter = new ReceiptFilterRequest();
+        _selectedResourceIds = new List<int>();
+        _selectedUnitIds = new List<int>();
+        _filter = new ReceiptFilterRequest();
         await LoadReceipts();
     }
 }
