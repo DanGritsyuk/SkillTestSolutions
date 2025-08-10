@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace NexusStock.WebApp.Common.Entities.Shipment
+﻿namespace NexusStock.WebApp.Common.Entities.Shipment
 {
-    public class ShipmentUpdateRequest
+    public class ShipmentSaveRequest
     {
-        public int Id { get; set; }
         public string Number { get; set; }
         public DateTimeOffset Date { get; set; }
         public int ClientId { get; set; }

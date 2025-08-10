@@ -29,7 +29,7 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
             }
         }
 
-        public async Task CreateUnitAsync(UnitCreateRequest request)
+        public async Task CreateUnitAsync(UnitSaveRequest request)
         {
             var response = await _httpClient.PostAsJsonAsync("units/create", request);
             if (!response.IsSuccessStatusCode)
@@ -39,9 +39,9 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
             }
         }
 
-        public async Task UpdateUnitAsync(UnitUpdateRequest request)
+        public async Task UpdateUnitAsync(int id, UnitSaveRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"units/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"units/update/{id}", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();

@@ -2,7 +2,7 @@
 
 namespace NexusStock.WebApp.Common.Entities.Resources
 {
-    public class ResourceCreateRequest
+    public class ResourceSaveRequest
     {
         public string Name { get; set; }
     }

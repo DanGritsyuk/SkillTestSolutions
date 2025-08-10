@@ -181,7 +181,7 @@ namespace NexusStock.BLL.Logic
 
             if (allEmpty)
             {
-                return await _unitOfWork.ShipmentDocuments.GetAllAsync();
+                return await _unitOfWork.ShipmentDocuments.GetFilteredWithDetailsAsync();
             }
 
             Expression<Func<ShipmentDocument, bool>> filter = sd =>

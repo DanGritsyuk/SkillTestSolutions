@@ -47,14 +47,14 @@ namespace NexusStock.WebApp.BLL.Services
             }
         }
 
-        public async Task CreateShipmentAsync(ShipmentCreateRequest request)
+        public async Task CreateShipmentAsync(ShipmentSaveRequest request)
         {
             await _httpClient.PostAsJsonAsync("shipments/create", request);
         }
 
-        public async Task UpdateShipmentAsync(ShipmentUpdateRequest request)
+        public async Task UpdateShipmentAsync(int id, ShipmentSaveRequest request)
         {
-            await _httpClient.PutAsJsonAsync($"shipments/update/{request.Id}", request);
+            await _httpClient.PutAsJsonAsync($"shipments/update/{id}", request);
         }
 
         public async Task DeleteShipmentAsync(int id)

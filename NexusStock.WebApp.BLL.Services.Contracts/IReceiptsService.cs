@@ -5,8 +5,8 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
     public interface IReceiptsService
     {
         Task<IEnumerable<ReceiptResponse>> GetFilteredReceiptsAsync(ReceiptFilterRequest filter);
-        Task CreateReceiptAsync(ReceiptCreateRequest request);
-        Task UpdateReceiptAsync(ReceiptUpdateRequest request);
+        Task CreateReceiptAsync(ReceiptSaveRequest request);
+        Task UpdateReceiptAsync(int id, ReceiptSaveRequest request);
         Task DeleteReceiptAsync(int id);
     }
 }

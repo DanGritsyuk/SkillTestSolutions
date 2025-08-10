@@ -5,8 +5,8 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
     public interface IUnitsService
     {
         Task<IEnumerable<UnitResponse>> GetUnitsAsync(bool includeArchived = false);
-        Task CreateUnitAsync(UnitCreateRequest request);
-        Task UpdateUnitAsync(UnitUpdateRequest request);
+        Task CreateUnitAsync(UnitSaveRequest request);
+        Task UpdateUnitAsync(int id, UnitSaveRequest request);
         Task ToggleUnitStatusAsync(int id);
     }
 }

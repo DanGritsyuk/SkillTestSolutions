@@ -99,7 +99,7 @@ namespace NexusStock.BLL.Logic
 
             if (allEmpty)
             {
-                return await _unitOfWork.ReceiptDocuments.GetAllAsync();
+                return await _unitOfWork.ReceiptDocuments.GetFilteredWithDetailsAsync();
             }
 
             Expression<Func<ReceiptDocument, bool>> filter = rd =>

@@ -142,7 +142,7 @@ else
     private bool _isLoading = true;
     private bool _showForm = false;
     private bool _isEditing = false;
-    private ClientCreateRequest _currentClient = new();
+    private ClientSaveRequest _currentClient = new();
     private int _currentId;
 
     private string GetNavClass(int tab)
@@ -184,14 +184,14 @@ else
 
     private void ShowCreateForm()
     {
-        _currentClient = new ClientCreateRequest();
+        _currentClient = new ClientSaveRequest();
         _isEditing = false;
         _showForm = true;
     }
 
     private void EditClient(ClientResponse client)
     {
-        _currentClient = new ClientCreateRequest
+        _currentClient = new ClientSaveRequest
         {
             Name = client.Name,
             Address = client.Address
@@ -212,12 +212,7 @@ else
         {
             if (_isEditing)
             {
-                await ClientsService.UpdateClientAsync(new ClientUpdateRequest
-                {
-                    Id = _currentId,
-                    Name = _currentClient.Name,
-                    Address = _currentClient.Address
-                });
+                await ClientsService.UpdateClientAsync(_currentId, _currentClient);
             }
             else
             {

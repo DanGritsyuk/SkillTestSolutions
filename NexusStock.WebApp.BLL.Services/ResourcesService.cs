@@ -31,7 +31,7 @@ namespace NexusStock.WebApp.BLL.Services
             }
         }
 
-        public async Task CreateResourceAsync(ResourceCreateRequest request)
+        public async Task CreateResourceAsync(ResourceSaveRequest request)
         {
             var response = await _httpClient.PostAsJsonAsync("resources/create", request);
             if (!response.IsSuccessStatusCode)
@@ -41,9 +41,9 @@ namespace NexusStock.WebApp.BLL.Services
             }
         }
 
-        public async Task UpdateResourceAsync(ResourceUpdateRequest request)
+        public async Task UpdateResourceAsync(int id, ResourceSaveRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"resources/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"resources/update/{id}", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();

@@ -307,6 +307,7 @@ else
                                     @for (int i = 0; i < _currentShipment.Items.Count; i++)
                                     {
                                         var item = _currentShipment.Items[i];
+                                        var currentIndex = i;
                                         <tr>
                                             <td>
                                                 <select class="form-select" @bind="item.ResourceId">
@@ -334,7 +335,7 @@ else
                                             </td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-danger"
-                                                        @onclick="() => RemoveShipmentItem(i)"
+                                                        @onclick="() => RemoveShipmentItem(currentIndex)"
                                                         title="Удалить">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -376,7 +377,7 @@ else
     private bool _showFilters = true;
     private bool _showForm = false;
     private bool _isEditing = false;
-    private ShipmentCreateRequest _currentShipment = new();
+    private ShipmentSaveRequest _currentShipment = new();
     private int _currentId;
 
     protected override async Task OnInitializedAsync()
@@ -436,7 +437,7 @@ else
 
     private void ShowCreateForm()
     {
-        _currentShipment = new ShipmentCreateRequest
+        _currentShipment = new ShipmentSaveRequest
         {
             Date = DateTime.Now.Date,
             Items = new List<ShipmentItemRequest>()
@@ -453,7 +454,7 @@ else
             return;
         }
 
-        _currentShipment = new ShipmentCreateRequest
+        _currentShipment = new ShipmentSaveRequest
         {
             Number = shipment.Number,
             Date = shipment.Date.ToLocalTime().DateTime,
@@ -494,14 +495,7 @@ else
         {
             if (_isEditing)
             {
-                await ShipmentsService.UpdateShipmentAsync(new ShipmentUpdateRequest
-                {
-                    Id = _currentId,
-                    Number = _currentShipment.Number,
-                    Date = _currentShipment.Date,
-                    ClientId = _currentShipment.ClientId,
-                    Items = _currentShipment.Items
-                });
+                await ShipmentsService.UpdateShipmentAsync(_currentId, _currentShipment);
             }
             else
             {

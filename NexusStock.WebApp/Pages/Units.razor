@@ -134,7 +134,7 @@ else
     private bool _isLoading = true;
     private bool _showForm = false;
     private bool _isEditing = false;
-    private UnitCreateRequest _currentUnit = new();
+    private UnitSaveRequest _currentUnit = new();
     private int _currentId;
 
     private bool IsActiveTab(int tab) => Tab == tab;
@@ -178,14 +178,14 @@ else
 
     private void ShowCreateForm()
     {
-        _currentUnit = new UnitCreateRequest();
+        _currentUnit = new UnitSaveRequest();
         _isEditing = false;
         _showForm = true;
     }
 
     private void EditUnit(UnitResponse unit)
     {
-        _currentUnit = new UnitCreateRequest { Name = unit.Name };
+        _currentUnit = new UnitSaveRequest { Name = unit.Name };
         _currentId = unit.Id;
         _isEditing = true;
         _showForm = true;
@@ -202,11 +202,7 @@ else
         {
             if (_isEditing)
             {
-                await UnitsService.UpdateUnitAsync(new UnitUpdateRequest
-                {
-                    Id = _currentId,
-                    Name = _currentUnit.Name
-                });
+                await UnitsService.UpdateUnitAsync(_currentId, _currentUnit);
             }
             else
             {

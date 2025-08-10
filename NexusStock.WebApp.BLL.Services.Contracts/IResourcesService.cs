@@ -5,8 +5,8 @@ namespace NexusStock.WebApp.BLL.Services.Contracts
     public interface IResourcesService
     {
         Task<IEnumerable<ResourceResponse>> GetResourcesAsync(bool includeArchived = false);
-        Task CreateResourceAsync(ResourceCreateRequest request);
-        Task UpdateResourceAsync(ResourceUpdateRequest request);
+        Task CreateResourceAsync(ResourceSaveRequest request);
+        Task UpdateResourceAsync(int id, ResourceSaveRequest request);
         Task ToggleResourceStatusAsync(int id);
     }
 }

@@ -43,15 +43,15 @@ namespace NexusStock.WebApp.BLL.Services
             }
         }
 
-        public async Task CreateReceiptAsync(ReceiptCreateRequest request)
+        public async Task CreateReceiptAsync(ReceiptSaveRequest request)
         {
             var response = await _httpClient.PostAsJsonAsync("receipts/create", request);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task UpdateReceiptAsync(ReceiptUpdateRequest request)
+        public async Task UpdateReceiptAsync(int id, ReceiptSaveRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"receipts/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"receipts/update/{id}", request);
             response.EnsureSuccessStatusCode();
         }
 

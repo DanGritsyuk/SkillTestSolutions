@@ -236,6 +236,7 @@ else
                                     @for (int i = 0; i < _currentReceipt.Items.Count; i++)
                                     {
                                         var item = _currentReceipt.Items[i];
+                                        var currentIndex = i;
                                         <tr>
                                             <td>
                                                 <select class="form-select" @bind="item.ResourceId">
@@ -263,7 +264,7 @@ else
                                             </td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-danger"
-                                                        @onclick="() => RemoveReceiptItem(i)"
+                                                        @onclick="() => RemoveReceiptItem(currentIndex)"
                                                         title="Удалить">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -302,7 +303,7 @@ else
     private bool _showFilters = true;
     private bool _showForm = false;
     private bool _isEditing = false;
-    private ReceiptCreateRequest _currentReceipt = new();
+    private ReceiptSaveRequest _currentReceipt = new();
     private int _currentId;
     private DateTime? _uiDate;
 
@@ -325,7 +326,6 @@ else
             _isLoading = true;
             StateHasChanged();
 
-            // Преобразование фильтров для API
             _filter.ResourceIds = _selectedResourceIds;
             _filter.UnitIds = _selectedUnitIds;
 
@@ -351,7 +351,7 @@ else
 
     private void ShowCreateForm()
     {
-        _currentReceipt = new ReceiptCreateRequest
+        _currentReceipt = new ReceiptSaveRequest
         {
             Date = DateTime.Now.Date,
             Items = new List<ReceiptItemRequest>()
@@ -362,7 +362,7 @@ else
 
     private void EditReceipt(ReceiptResponse receipt)
     {
-        _currentReceipt = new ReceiptCreateRequest
+        _currentReceipt = new ReceiptSaveRequest
         {
             Number = receipt.Number,
             Date = receipt.Date.ToLocalTime().DateTime,
@@ -390,7 +390,7 @@ else
 
     private void RemoveReceiptItem(int index)
     {
-        if (_currentReceipt.Items.Count > index)
+        if (index >= 0 && index < _currentReceipt.Items.Count)
         {
             _currentReceipt.Items.RemoveAt(index);
         }
@@ -402,13 +402,7 @@ else
         {
             if (_isEditing)
             {
-                await ReceiptsService.UpdateReceiptAsync(new ReceiptUpdateRequest
-                {
-                    Id = _currentId,
-                    Number = _currentReceipt.Number,
-                    Date = _currentReceipt.Date,
-                    Items = _currentReceipt.Items
-                });
+                await ReceiptsService.UpdateReceiptAsync(_currentId, _currentReceipt);
             }
             else
             {

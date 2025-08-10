@@ -1,8 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace NexusStock.WebApp.Common.Entities.Receipt
+﻿namespace NexusStock.WebApp.Common.Entities.Receipt
 {
-    public class ReceiptCreateRequest
+    public class ReceiptSaveRequest
     {
         public string Number { get; set; }
         public DateTimeOffset Date { get; set; }

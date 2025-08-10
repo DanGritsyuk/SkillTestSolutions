@@ -31,7 +31,7 @@ namespace NexusStock.WebApp.BLL.Services
             }
         }
 
-        public async Task CreateClientAsync(ClientCreateRequest request)
+        public async Task CreateClientAsync(ClientSaveRequest request)
         {
             var response = await _httpClient.PostAsJsonAsync("clients/create", request);
             if (!response.IsSuccessStatusCode)
@@ -41,9 +41,9 @@ namespace NexusStock.WebApp.BLL.Services
             }
         }
 
-        public async Task UpdateClientAsync(ClientUpdateRequest request)
+        public async Task UpdateClientAsync(int id, ClientSaveRequest request)
         {
-            var response = await _httpClient.PutAsJsonAsync($"clients/update/{request.Id}", request);
+            var response = await _httpClient.PutAsJsonAsync($"clients/update/{id}", request);
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
