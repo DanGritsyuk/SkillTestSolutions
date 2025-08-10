@@ -13,6 +13,7 @@ namespace NexusStock.BLL.Logic.Contracts
         Task<IEnumerable<ShipmentDocument>> GetFilteredShipmentsAsync(
             DateTimeOffset? startDate,
             DateTimeOffset? endDate,
+            bool? IsSigned,
             IEnumerable<int> clientIds,
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds);

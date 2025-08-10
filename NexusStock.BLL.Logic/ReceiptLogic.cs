@@ -2,7 +2,6 @@
 using NexusStock.BLL.Logic.Contracts;
 using NexusStock.Common.Entities;
 using NexusStock.DAL.Repository.Contracts;
-using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 
 namespace NexusStock.BLL.Logic
@@ -92,6 +91,17 @@ namespace NexusStock.BLL.Logic
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds)
         {
+            bool allEmpty = !startDate.HasValue
+                && !endDate.HasValue
+                && (documentIds == null || !documentIds.Any())
+                && (resourceIds == null || !resourceIds.Any())
+                && (unitIds == null || !unitIds.Any());
+
+            if (allEmpty)
+            {
+                return await _unitOfWork.ReceiptDocuments.GetAllAsync();
+            }
+
             Expression<Func<ReceiptDocument, bool>> filter = rd =>
                 (!startDate.HasValue || rd.Date >= startDate.Value) &&
                 (!endDate.HasValue || rd.Date <= endDate.Value) &&

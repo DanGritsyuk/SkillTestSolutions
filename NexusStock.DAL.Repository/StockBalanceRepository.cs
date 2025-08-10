@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NexusStock.Common.Entities;
 using NexusStock.DAL.Repository.Contracts;
+using System.Linq.Expressions;
 
 namespace NexusStock.DAL.Repository
 {
@@ -10,10 +11,24 @@ namespace NexusStock.DAL.Repository
 
         public async Task<IEnumerable<StockBalance>> GetAllWithDetailsAsync()
         {
-            return await _context.StockBalances
+            return await GetBaseQuery()
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<StockBalance>> GetFilteredWithDetailsAsync(Expression<Func<StockBalance, bool>> filter)
+        {
+            return await GetBaseQuery()
+                .Where(filter)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        private IQueryable<StockBalance> GetBaseQuery()
+        {
+            return _context.StockBalances
                 .Include(b => b.Resource)
                 .Include(b => b.Unit)
-                .ToListAsync();
+                .AsNoTracking();
         }
     }
 }

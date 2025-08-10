@@ -51,6 +51,7 @@ namespace NexusStock.WebAPI.Controllers
                 var shipments = await _shipmentLogic.GetFilteredShipmentsAsync(
                     filter.StartDate?.UtcDateTime,
                     filter.EndDate?.UtcDateTime,
+                    filter.IsSigned,
                     filter.ClientIds,
                     filter.ResourceIds,
                     filter.UnitIds);

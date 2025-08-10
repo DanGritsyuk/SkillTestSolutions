@@ -2,6 +2,7 @@
 using NexusStock.BLL.Logic.Contracts;
 using NexusStock.Common.Entities;
 using NexusStock.DAL.Repository.Contracts;
+using System.Linq.Expressions;
 
 namespace NexusStock.BLL.Logic
 {
@@ -22,26 +23,27 @@ namespace NexusStock.BLL.Logic
         {
             try
             {
-                // Используем метод с включением связанных данных
-                var balances = await _unitOfWork.StockBalances.GetAllWithDetailsAsync();
+                var resourceIdsList = resourceIds?.Distinct().ToList();
+                var unitIdsList = unitIds?.Distinct().ToList();
 
-                // Применяем фильтрацию
-                if (resourceIds != null && resourceIds.Any())
+                bool noResourceFilter = resourceIdsList == null || !resourceIdsList.Any();
+                bool noUnitFilter = unitIdsList == null || !unitIdsList.Any();
+
+                if (noResourceFilter && noUnitFilter)
                 {
-                    balances = balances.Where(b => resourceIds.Contains(b.ResourceId));
+                    return await _unitOfWork.StockBalances.GetAllWithDetailsAsync();
                 }
 
-                if (unitIds != null && unitIds.Any())
-                {
-                    balances = balances.Where(b => unitIds.Contains(b.UnitId));
-                }
+                Expression<Func<StockBalance, bool>> filter = b =>
+                    (noResourceFilter || resourceIdsList!.Contains(b.ResourceId)) &&
+                    (noUnitFilter || unitIdsList!.Contains(b.UnitId));
 
-                return balances;
+                return await _unitOfWork.StockBalances.GetFilteredWithDetailsAsync(filter);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении складских остатков");
-                throw new Exception("Ошибка при загрузке данных");
+                throw;
             }
         }
     }

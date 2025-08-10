@@ -29,7 +29,7 @@
     </ul>
 </div>
 
-@if (isLoading)
+@if (_isLoading)
 {
     <div class="d-flex justify-content-center my-5">
         <div class="spinner-border" role="status">
@@ -37,7 +37,7 @@
         </div>
     </div>
 }
-else if (resources.Count == 0)
+else if (_resources.Count == 0)
 {
     <div class="alert alert-info">
         @(Tab == 1
@@ -57,7 +57,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var resource in resources)
+            @foreach (var resource in _resources)
             {
                 <tr>
                     <td>@resource.Id</td>
@@ -88,26 +88,26 @@ else
     </table>
 }
 
-@if (showForm)
+@if (_showForm)
 {
     <div class="modal" style="display:block; background:rgba(0,0,0,0.5)">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        @(isEditing ? "Редактирование" : "Создание") ресурса
+                        @(_isEditing ? "Редактирование" : "Создание") ресурса
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseForm"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@currentResource" OnValidSubmit="@SaveResource">
+                    <EditForm Model="@_currentResource" OnValidSubmit="@SaveResource">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
                         <div class="mb-3">
                             <label class="form-label">Наименование *</label>
-                            <InputText class="form-control" @bind-Value="currentResource.Name" />
-                            <ValidationMessage For="@(() => currentResource.Name)" />
+                            <InputText class="form-control" @bind-Value="_currentResource.Name" />
+                            <ValidationMessage For="@(() => _currentResource.Name)" />
                         </div>
 
                         <div class="d-flex justify-content-end mt-4">
@@ -130,12 +130,12 @@ else
     [Parameter]
     public int Tab { get; set; } = 1; // 1 - активные, 2 - архивные
 
-    private List<ResourceResponse> resources = new();
-    private bool isLoading = true;
-    private bool showForm = false;
-    private bool isEditing = false;
-    private ResourceCreateRequest currentResource = new();
-    private int currentId;
+    private List<ResourceResponse> _resources = new();
+    private bool _isLoading = true;
+    private bool _showForm = false;
+    private bool _isEditing = false;
+    private ResourceCreateRequest _currentResource = new();
+    private int _currentId;
 
     private string GetNavClass(int tab)
     {
@@ -151,67 +151,67 @@ else
     {
         try
         {
-            isLoading = true;
+            _isLoading = true;
             StateHasChanged();
 
             // Для активных - только активные записи
             if (Tab == 1)
             {
-                resources = (await ResourcesService.GetResourcesAsync(false))?.ToList()
+                _resources = (await ResourcesService.GetResourcesAsync(false))?.ToList()
                     ?? new List<ResourceResponse>();
             }
             // Для архивных - только архивные записи
             else
             {
                 var allResources = await ResourcesService.GetResourcesAsync(true);
-                resources = allResources?.Where(r => !r.IsActive).ToList()
+                _resources = allResources?.Where(r => !r.IsActive).ToList()
                     ?? new List<ResourceResponse>();
             }
         }
         finally
         {
-            isLoading = false;
+            _isLoading = false;
         }
     }
 
     private void ShowCreateForm()
     {
-        currentResource = new ResourceCreateRequest();
-        isEditing = false;
-        showForm = true;
+        _currentResource = new ResourceCreateRequest();
+        _isEditing = false;
+        _showForm = true;
     }
 
     private void EditResource(ResourceResponse resource)
     {
-        currentResource = new ResourceCreateRequest { Name = resource.Name };
-        currentId = resource.Id;
-        isEditing = true;
-        showForm = true;
+        _currentResource = new ResourceCreateRequest { Name = resource.Name };
+        _currentId = resource.Id;
+        _isEditing = true;
+        _showForm = true;
     }
 
     private void CloseForm()
     {
-        showForm = false;
+        _showForm = false;
     }
 
     private async Task SaveResource()
     {
         try
         {
-            if (isEditing)
+            if (_isEditing)
             {
                 await ResourcesService.UpdateResourceAsync(new ResourceUpdateRequest
                 {
-                    Id = currentId,
-                    Name = currentResource.Name
+                    Id = _currentId,
+                    Name = _currentResource.Name
                 });
             }
             else
             {
-                await ResourcesService.CreateResourceAsync(currentResource);
+                await ResourcesService.CreateResourceAsync(_currentResource);
             }
 
-            showForm = false;
+            _showForm = false;
             await LoadResources();
         }
         catch (Exception ex)

@@ -29,7 +29,7 @@
     </ul>
 </div>
 
-@if (isLoading)
+@if (_isLoading)
 {
     <div class="d-flex justify-content-center my-5">
         <div class="spinner-border" role="status">
@@ -37,7 +37,7 @@
         </div>
     </div>
 }
-else if (clients.Count == 0)
+else if (_clients.Count == 0)
 {
     <div class="alert alert-info">
         @(Tab == 1
@@ -58,7 +58,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var client in clients)
+            @foreach (var client in _clients)
             {
                 <tr>
                     <td>@client.Id</td>
@@ -90,32 +90,32 @@ else
     </table>
 }
 
-@if (showForm)
+@if (_showForm)
 {
     <div class="modal" style="display:block; background:rgba(0,0,0,0.5)">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        @(isEditing ? "Редактирование" : "Создание") клиента
+                        @(_isEditing ? "Редактирование" : "Создание") клиента
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseForm"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@currentClient" OnValidSubmit="@SaveClient">
+                    <EditForm Model="@_currentClient" OnValidSubmit="@SaveClient">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
                         <div class="mb-3">
                             <label class="form-label">Наименование *</label>
-                            <InputText class="form-control" @bind-Value="currentClient.Name" />
-                            <ValidationMessage For="@(() => currentClient.Name)" />
+                            <InputText class="form-control" @bind-Value="_currentClient.Name" />
+                            <ValidationMessage For="@(() => _currentClient.Name)" />
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Адрес *</label>
-                            <InputText class="form-control" @bind-Value="currentClient.Address" />
-                            <ValidationMessage For="@(() => currentClient.Address)" />
+                            <InputText class="form-control" @bind-Value="_currentClient.Address" />
+                            <ValidationMessage For="@(() => _currentClient.Address)" />
                         </div>
 
                         <div class="d-flex justify-content-end mt-4">
@@ -138,12 +138,12 @@ else
     [Parameter]
     public int Tab { get; set; } = 1; // 1 - активные, 2 - архивные
 
-    private List<ClientResponse> clients = new();
-    private bool isLoading = true;
-    private bool showForm = false;
-    private bool isEditing = false;
-    private ClientCreateRequest currentClient = new();
-    private int currentId;
+    private List<ClientResponse> _clients = new();
+    private bool _isLoading = true;
+    private bool _showForm = false;
+    private bool _isEditing = false;
+    private ClientCreateRequest _currentClient = new();
+    private int _currentId;
 
     private string GetNavClass(int tab)
     {
@@ -159,72 +159,72 @@ else
     {
         try
         {
-            isLoading = true;
+            _isLoading = true;
             StateHasChanged();
 
             // Для активных - только активные записи
             if (Tab == 1)
             {
-                clients = (await ClientsService.GetClientsAsync(false))?.ToList()
+                _clients = (await ClientsService.GetClientsAsync(false))?.ToList()
                     ?? new List<ClientResponse>();
             }
             // Для архивных - только архивные записи
             else
             {
                 var allClients = await ClientsService.GetClientsAsync(true);
-                clients = allClients?.Where(c => !c.IsActive).ToList()
+                _clients = allClients?.Where(c => !c.IsActive).ToList()
                     ?? new List<ClientResponse>();
             }
         }
         finally
         {
-            isLoading = false;
+            _isLoading = false;
         }
     }
 
     private void ShowCreateForm()
     {
-        currentClient = new ClientCreateRequest();
-        isEditing = false;
-        showForm = true;
+        _currentClient = new ClientCreateRequest();
+        _isEditing = false;
+        _showForm = true;
     }
 
     private void EditClient(ClientResponse client)
     {
-        currentClient = new ClientCreateRequest
+        _currentClient = new ClientCreateRequest
         {
             Name = client.Name,
             Address = client.Address
         };
-        currentId = client.Id;
-        isEditing = true;
-        showForm = true;
+        _currentId = client.Id;
+        _isEditing = true;
+        _showForm = true;
     }
 
     private void CloseForm()
     {
-        showForm = false;
+        _showForm = false;
     }
 
     private async Task SaveClient()
     {
         try
         {
-            if (isEditing)
+            if (_isEditing)
             {
                 await ClientsService.UpdateClientAsync(new ClientUpdateRequest
                 {
-                    Id = currentId,
-                    Name = currentClient.Name,
-                    Address = currentClient.Address
+                    Id = _currentId,
+                    Name = _currentClient.Name,
+                    Address = _currentClient.Address
                 });
             }
             else
             {
-                await ClientsService.CreateClientAsync(currentClient);
+                await ClientsService.CreateClientAsync(_currentClient);
             }
 
-            showForm = false;
+            _showForm = false;
             await LoadClients();
         }
         catch (Exception ex)

@@ -167,13 +167,27 @@ namespace NexusStock.BLL.Logic
         public async Task<IEnumerable<ShipmentDocument>> GetFilteredShipmentsAsync(
             DateTimeOffset? startDate,
             DateTimeOffset? endDate,
+            bool? IsSigned,
             IEnumerable<int> clientIds,
             IEnumerable<int> resourceIds,
             IEnumerable<int> unitIds)
         {
+            bool allEmpty = !startDate.HasValue
+                && !endDate.HasValue
+                && !IsSigned.HasValue
+                && (clientIds == null || !clientIds.Any())
+                && (resourceIds == null || !resourceIds.Any())
+                && (unitIds == null || !unitIds.Any());
+
+            if (allEmpty)
+            {
+                return await _unitOfWork.ShipmentDocuments.GetAllAsync();
+            }
+
             Expression<Func<ShipmentDocument, bool>> filter = sd =>
                 (!startDate.HasValue || sd.Date >= startDate.Value) &&
                 (!endDate.HasValue || sd.Date <= endDate.Value) &&
+                (!IsSigned.HasValue || sd.IsSigned == IsSigned.Value) &&
                 (clientIds == null || !clientIds.Any() || clientIds.Contains(sd.ClientId)) &&
                 (resourceIds == null || !resourceIds.Any() || sd.Items.Any(i => resourceIds.Contains(i.ResourceId))) &&
                 (unitIds == null || !unitIds.Any() || sd.Items.Any(i => unitIds.Contains(i.UnitId)));

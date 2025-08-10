@@ -30,10 +30,10 @@ namespace NexusStock.WebApp.BLL.Services
                     .AddListParam("resourceIds", filter.ResourceIds)
                     .AddListParam("unitIds", filter.UnitIds);
 
-                //if (filter.IsSigned.HasValue)
-                //{
-                //    builder.AddBoolParam("isSigned", filter.IsSigned.Value);
-                //}
+                if (filter.IsSigned.HasValue)
+                {
+                    builder.AddBoolParam("isSigned", filter.IsSigned.Value);
+                }
 
                 var url = builder.Build();
 

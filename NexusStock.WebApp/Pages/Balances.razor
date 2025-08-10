@@ -18,12 +18,12 @@
             <h5 class="mb-0">Фильтры</h5>
             <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleFilterPanel">
                 <i class="bi bi-funnel"></i>
-                @(showFilters ? "Скрыть" : "Показать")
+                @(_showFilters ? "Скрыть" : "Показать")
             </button>
         </div>
     </div>
 
-    @if (showFilters)
+    @if (_showFilters)
     {
         <div class="card-body">
             <div class="row">
@@ -31,11 +31,11 @@
                     <div class="mb-3">
                         <label class="form-label">Ресурсы</label>
                         <select class="form-select" multiple size="5" @onchange="OnResourceFilterChange">
-                            @if (allResources?.Count > 0)
+                            @if (_allResources?.Count > 0)
                             {
-                                @foreach (var resource in allResources)
+                                @foreach (var resource in _allResources)
                                 {
-                                    <option value="@resource.Id" selected="@selectedResourceIds.Contains(resource.Id)">
+                                    <option value="@resource.Id" selected="@_selectedResourceIds.Contains(resource.Id)">
                                         @resource.Name
                                     </option>
                                 }
@@ -74,7 +74,7 @@
     }
 </div>
 
-@if (isLoading)
+@if (_isLoading)
 {
     <div class="d-flex justify-content-center my-5">
         <div class="spinner-border" role="status">
@@ -82,7 +82,7 @@
         </div>
     </div>
 }
-else if (balances?.Count == 0)
+else if (_balances?.Count == 0)
 {
     <div class="alert alert-info">
         Нет данных для отображения
@@ -100,7 +100,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var balance in balances)
+                @foreach (var balance in _balances)
                 {
                     <tr>
                         <td>@balance.ResourceName</td>
@@ -114,13 +114,13 @@ else
 }
 
 @code {
-    private List<StockBalanceResponse> balances = new();
-    private List<ResourceResponse> allResources = new();
+    private List<StockBalanceResponse> _balances = new();
+    private List<ResourceResponse> _allResources = new();
     private List<UnitResponse> _allUnits = new();
-    private List<int> selectedResourceIds = new();
+    private List<int> _selectedResourceIds = new();
     private List<int> _selectedUnitIds = new();
-    private bool isLoading = true;
-    private bool showFilters = true;
+    private bool _isLoading = true;
+    private bool _showFilters = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -130,29 +130,28 @@ else
 
     private async Task LoadInitialData()
     {
-        allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
+        _allResources = (await ResourcesService.GetResourcesAsync(false))?.ToList() ?? new();
         _allUnits = (await UnitsService.GetUnitsAsync(false))?.ToList() ?? new();
 
-        // Инициализация фильтров - все выбранны по умолчанию
-        selectedResourceIds = allResources.Select(r => r.Id).ToList();
-        _selectedUnitIds = _allUnits.Select(u => u.Id).ToList();
+        _selectedResourceIds = new List<int>();
+        _selectedUnitIds = new List<int>();
     }
 
     private async Task LoadBalances()
     {
         try
         {
-            isLoading = true;
+            _isLoading = true;
             StateHasChanged();
 
-            balances = (await StockService.GetFilteredStockBalancesAsync(
-                selectedResourceIds,
+            _balances = (await StockService.GetFilteredStockBalancesAsync(
+                _selectedResourceIds,
                 _selectedUnitIds
             ))?.ToList() ?? new();
         }
         finally
         {
-            isLoading = false;
+            _isLoading = false;
         }
     }
 
@@ -161,11 +160,11 @@ else
         var selected = e.Value as string[];
         if (selected != null)
         {
-            selectedResourceIds = selected.Select(int.Parse).ToList();
+            _selectedResourceIds = selected.Select(int.Parse).ToList();
         }
         else
         {
-            selectedResourceIds = new List<int>();
+            _selectedResourceIds = new List<int>();
         }
     }
 
@@ -189,13 +188,13 @@ else
 
     private async Task ResetFilters()
     {
-        selectedResourceIds = allResources.Select(r => r.Id).ToList();
-        _selectedUnitIds = _allUnits.Select(u => u.Id).ToList();
+        _selectedResourceIds = new List<int>();
+        _selectedUnitIds = new List<int>();
         await LoadBalances();
     }
 
     private void ToggleFilterPanel()
     {
-        showFilters = !showFilters;
+        _showFilters = !_showFilters;
     }
 }

@@ -36,13 +36,13 @@
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label">Дата с</label>
-                        <InputDate class="form-control" @bind-Value="filter.StartDate" />
+                        <InputDate class="form-control" @bind-Value="_filter.StartDate" />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label">Дата по</label>
-                        <InputDate class="form-control" @bind-Value="filter.EndDate" />
+                        <InputDate class="form-control" @bind-Value="_filter.EndDate" />
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -370,7 +370,7 @@ else
     private List<int> _selectedResourceIds = new();
     private List<int> _selectedUnitIds = new();
     private HashSet<int> _expandedShipments = new();
-    private ShipmentFilterRequest filter = new();
+    private ShipmentFilterRequest _filter = new();
     private string _filterStatus = "";
     private bool _isLoading = true;
     private bool _showFilters = true;
@@ -400,21 +400,21 @@ else
             StateHasChanged();
 
             // Применяем фильтр статуса
-            // if (!string.IsNullOrEmpty(filterStatus))
-            // {
-            //     filter.IsSigned = filterStatus == "signed";
-            // }
-            // else
-            // {
-            //     filter.IsSigned = null;
-            // }
+            if (!string.IsNullOrEmpty(_filterStatus))
+            {
+                _filter.IsSigned = _filterStatus == "signed";
+            }
+            else
+            {
+                _filter.IsSigned = null;
+            }
 
             // Применяем фильтры клиентов
-            filter.ClientIds = _selectedClientIds;
-            filter.ResourceIds = _selectedResourceIds;
-            filter.UnitIds = _selectedUnitIds;
+            _filter.ClientIds = _selectedClientIds;
+            _filter.ResourceIds = _selectedResourceIds;
+            _filter.UnitIds = _selectedUnitIds;
 
-            _shipments = (await ShipmentsService.GetFilteredShipmentsAsync(filter))?.ToList() ?? new();
+            _shipments = (await ShipmentsService.GetFilteredShipmentsAsync(_filter))?.ToList() ?? new();
         }
         finally
         {
@@ -578,7 +578,7 @@ else
         _selectedResourceIds = new List<int>();
         _selectedUnitIds = new List<int>();
         _filterStatus = "";
-        filter = new ShipmentFilterRequest();
+        _filter = new ShipmentFilterRequest();
         await LoadShipments();
     }
 }

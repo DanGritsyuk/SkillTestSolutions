@@ -4,6 +4,7 @@
     {
         public DateTimeOffset? StartDate { get; set; }
         public DateTimeOffset? EndDate { get; set; }
+        public bool? IsSigned { get; set; }
         public List<int> ClientIds { get; set; }
         public List<int> ResourceIds { get; set; }
         public List<int> UnitIds { get; set; }
