@@ -4,25 +4,38 @@
     {
         static void Main(string[] args)
         {
-            long answer = CountParts(Console.ReadLine()!);
+            var k = int.Parse(Console.ReadLine()!);
+            var numbers = new List<string>();
 
-            Console.WriteLine(answer);
-        }
-
-        private static long CountParts(string t)
-        {
-            long countM = 0;
-            foreach (char c in t)
+            for (int i = 0; i < k; i++)
             {
-                if (c == 'M')
-                    countM++;
+                numbers.Add(Console.ReadLine()!);
             }
 
-            // Решаем неравенство: n(n+1)/2 <= countM
-            // n^2 + n - 2 * countM <= 0
-            // Используем формулу для нахождения корней квадратного уравнения
-            long n = (long)((-1 + Math.Sqrt(1 + 8 * countM)) / 2);
-            return n;
+            string result = GetStrLargestNumber(numbers);
+            Console.WriteLine(result);
+
+
+        }
+
+        static string GetStrLargestNumber(List<string> numbers)
+        {
+            numbers.Sort((a, b) =>
+            {
+                string ab = a + b;
+                string ba = b + a;
+                return ba.CompareTo(ab); // Обратный порядок для получения убывающей сортировки
+            });
+
+            string result = string.Concat(numbers);
+
+            // Проверка на случай, если все числа нули
+            if (result.Length > 0 && result[0] == '0')
+            {
+                return "0";
+            }
+
+            return result;
         }
     }
 }
