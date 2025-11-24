@@ -4,128 +4,69 @@
     {
         static void Main()
         {
-            int n = int.Parse(Console.ReadLine()!);
-            (long c, long m)[] sanctuaries = new (long, long)[n];
-            for (int i = 0; i < n; i++)
+            int sanctuaryCount = int.Parse(Console.ReadLine());
+
+            int[] cats = new int[sanctuaryCount];
+
+            int bestPriority = int.MinValue;
+            int chosenSanctuary = 0;
+            int indexOfMaxCats = -1;
+            int totalCost = 0;
+
+            for (int i = 0; i < sanctuaryCount; i++)
             {
-                string[] input = Console.ReadLine()!.Split();
-                long cVal = long.Parse(input[0]);
-                long mVal = long.Parse(input[1]);
-                sanctuaries[i] = (cVal, mVal);
-            }
+                var data = Console.ReadLine()!.Split().Select(int.Parse).ToArray();
+                int catCount = data[0];
+                int bribeCost = data[1];
+                cats[i] = catCount;
 
-            long[] allC = sanctuaries.Select(s => s.c).ToArray();
-            Array.Sort(allC);
-            long[] sufSum = new long[allC.Length + 1];
-            for (int i = allC.Length - 1; i >= 0; i--)
-            {
-                sufSum[i] = sufSum[i + 1] + allC[i];
-            }
-
-            long bestCost = long.MaxValue;
-            int bestIndex = -1;
-            long bestT = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                if (sanctuaries[i].m == -1) continue;
-
-                long c_i = sanctuaries[i].c;
-                long T_max = FindTMax(c_i, allC, sufSum);
-
-                long cost;
-                if (T_max == c_i)
+                if (bribeCost >= 0)
                 {
-                    long s_val = S(c_i, allC, sufSum);
-                    cost = sanctuaries[i].m + s_val - 1;
-                }
-                else
-                {
-                    long s_val = S(T_max, allC, sufSum);
-                    cost = sanctuaries[i].m + s_val;
-                }
+                    int currentPriority = catCount - bribeCost;
 
-                if (cost < bestCost)
-                {
-                    bestCost = cost;
-                    bestIndex = i;
-                    bestT = T_max;
-                }
-            }
-
-            Console.WriteLine(bestCost);
-            Console.WriteLine(bestIndex + 1);
-
-            long[] newC = new long[n];
-            for (int j = 0; j < n; j++)
-            {
-                if (j == bestIndex)
-                {
-                    if (bestT == sanctuaries[j].c)
+                    if (currentPriority > bestPriority)
                     {
-                        newC[j] = sanctuaries[j].c + S(bestT, allC, sufSum) - 1;
+                        bestPriority = currentPriority;
+                        totalCost = bribeCost;
+
+                        if (indexOfMaxCats > -1 && cats[chosenSanctuary] > cats[indexOfMaxCats])
+                        {
+                            indexOfMaxCats = chosenSanctuary;
+                        }
+
+                        chosenSanctuary = i;
                     }
                     else
                     {
-                        newC[j] = sanctuaries[j].c + S(bestT, allC, sufSum);
+                        if (indexOfMaxCats < 0 || cats[i] > cats[indexOfMaxCats])
+                        {
+                            indexOfMaxCats = i;
+                        }
                     }
                 }
                 else
                 {
-                    newC[j] = Math.Min(sanctuaries[j].c, bestT - 1);
+                    if (indexOfMaxCats < 0 || cats[i] > cats[indexOfMaxCats])
+                    {
+                        indexOfMaxCats = i;
+                    }
                 }
             }
 
-            Console.WriteLine(string.Join(" ", newC));
-        }
-
-        private static long FindTMax(long c_i, long[] allC, long[] sufSum)
-        {
-            long L = c_i;
-            long R = allC[allC.Length - 1] + 1;
-            long T_max = c_i;
-            while (L <= R)
+            if (indexOfMaxCats > -1 && cats[chosenSanctuary] >= cats[indexOfMaxCats])
             {
-                long mid = (L + R) / 2;
-                long s_val = S(mid, allC, sufSum);
-                if (c_i + s_val >= mid)
-                {
-                    T_max = mid;
-                    L = mid + 1;
-                }
-                else
-                {
-                    R = mid - 1;
-                }
-            }
-            return T_max;
-        }
+                int initialCats = cats[chosenSanctuary];
+                int combinedCats = cats[chosenSanctuary] + cats[indexOfMaxCats];
 
-        private static long S(long T, long[] allC, long[] sufSum)
-        {
-            int k = LowerBound(allC, T);
-            int n = allC.Length;
-            if (k == n) return 0;
-            return sufSum[k] - (n - k) * (T - 1);
-        }
+                cats[chosenSanctuary] = combinedCats / 2 + 1;
+                cats[indexOfMaxCats] = combinedCats - cats[chosenSanctuary];
 
-        private static int LowerBound(long[] arr, long T)
-        {
-            int low = 0;
-            int high = arr.Length;
-            while (low < high)
-            {
-                int mid = (low + high) / 2;
-                if (arr[mid] < T)
-                {
-                    low = mid + 1;
-                }
-                else
-                {
-                    high = mid;
-                }
+                totalCost += cats[chosenSanctuary] - initialCats;
             }
-            return low;
+
+            Console.WriteLine(totalCost);
+            Console.WriteLine(chosenSanctuary + 1);
+            Console.WriteLine(string.Join(" ", cats));
         }
     }
 }
