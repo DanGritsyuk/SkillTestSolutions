@@ -16,18 +16,20 @@ namespace VendingMachine.DAL.Repository
             _logger = logger;
         }
 
-        public async Task<Drink> GetDrinkAsync(int id)
+        public async Task<Drink?> GetDrinkAsync(int id)
         {
             try
             {
-                var drink = await _dbContext.Drinks.FirstAsync(dr => dr.ItemId == id);
-                _logger.LogDebug($"Successfully retrieved drink with ID: {id}");
+                var drink = await _dbContext.Drinks.FirstOrDefaultAsync(dr => dr.ItemId == id);
+                if (drink == null)
+                {
+                    _logger.LogWarning("Drink with ID {DrinkId} not found", id);
+                }
+                else
+                {
+                    _logger.LogDebug("Successfully retrieved drink with ID: {DrinkId}", id);
+                }
                 return drink;
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, $"Drink with ID {id} not found");
-                throw new KeyNotFoundException($"Drink with ID {id} not found", ex);
             }
             catch (Exception ex)
             {
@@ -128,7 +130,7 @@ namespace VendingMachine.DAL.Repository
             }
         }
 
-        public async Task InsertOrUpdateRangeAsync(IEnumerable<Drink> drinks)
+        public async Task BulkUpsertAsync(IEnumerable<Drink> drinks)
         {
             var drinkList = drinks.ToList();
             _logger.LogInformation($"Bulk inserting/updating {drinkList.Count} drinks");

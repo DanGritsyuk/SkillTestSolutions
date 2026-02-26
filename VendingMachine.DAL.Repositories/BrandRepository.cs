@@ -64,7 +64,6 @@ namespace VendingMachine.DAL.Repository
             try
             {
                 await _dbContext.Brands.AddAsync(brand);
-                await _dbContext.SaveChangesAsync();
                 _logger.LogInformation($"Successfully added brand with ID: {brand.BrandId}");
             }
             catch (DbUpdateException ex)
@@ -79,14 +78,13 @@ namespace VendingMachine.DAL.Repository
             }
         }
 
-        public async Task UpdateAsync(Brand brand)
+        public void Update(Brand brand)
         {
             _logger.LogInformation($"Updating brand with ID: {brand.BrandId}");
 
             try
             {
                 _dbContext.Brands.Update(brand);
-                await _dbContext.SaveChangesAsync();
                 _logger.LogInformation($"Successfully updated brand with ID: {brand.BrandId}");
             }
             catch (DbUpdateConcurrencyException ex)
@@ -111,7 +109,6 @@ namespace VendingMachine.DAL.Repository
                 if (brand != null)
                 {
                     _dbContext.Brands.Remove(brand);
-                    await _dbContext.SaveChangesAsync();
                     _logger.LogInformation($"Successfully deleted brand with ID: {id}");
                 }
                 else

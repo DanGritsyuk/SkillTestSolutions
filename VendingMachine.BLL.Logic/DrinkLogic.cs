@@ -1,13 +1,10 @@
-﻿using VendingMachine.BLL.Logic.Contracts;
+using Microsoft.Extensions.Logging;
+using VendingMachine.BLL.Logic.Contracts;
 using VendingMachine.Common.Entities;
 using VendingMachine.DAL.Repository.Contracts;
-using Microsoft.Extensions.Logging;
 
 namespace VendingMachine.BLL.Logic
 {
-    /// <summary>
-    /// Business logic for working with drinks.
-    /// </summary>
     public class DrinkLogic : IDrinkLogic
     {
         private readonly IDrinksRepository _drinksRepository;
@@ -19,56 +16,112 @@ namespace VendingMachine.BLL.Logic
             IBrandRepository brandRepository,
             ILogger<DrinkLogic> logger)
         {
-            _drinksRepository = drinksRepository;
-            _brandRepository = brandRepository;
-            _logger = logger;
+            _drinksRepository = drinksRepository ?? throw new ArgumentNullException(nameof(drinksRepository));
+            _brandRepository = brandRepository ?? throw new ArgumentNullException(nameof(brandRepository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Returns all drinks from the repository.
-        /// </summary>
-        public IAsyncEnumerable<Drink> GetAllDrinksAsync()
+        public IAsyncEnumerable<Drink> GetAllAsync()
         {
-            _logger.LogDebug("Called GetAllDrinksAsync()");
+            _logger.LogDebug("GetAllAsync called");
             return _drinksRepository.GetAllAsync();
         }
 
-        /// <summary>
-        /// Returns a drink by its unique identifier.
-        /// </summary>
-        /// <param name="id">The GUID of the drink.</param>
-        /// <returns>Drink entity or null.</returns>
-        public async Task<Drink?> GetDrinkByIdAsync(int id)
+        public async Task<Drink?> GetByIdAsync(int id)
         {
-            _logger.LogDebug($"Called GetDrinkByIdAsync() with id: {id}");
+            if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id));
 
-            var drink = await _drinksRepository.GetDrinkAsync(id);
-
-            if (drink == null)
-            {
-                _logger.LogWarning($"Drink with id {id} not found.");
-            }
-
-            return drink;
+            _logger.LogDebug("GetByIdAsync called with id: {DrinkId}", id);
+            return await _drinksRepository.GetDrinkAsync(id);
         }
 
-        /// <summary>
-        /// Returns all drinks that belong to a specific brand.
-        /// </summary>
-        /// <param name="brandId">The ID of the brand.</param>
-        /// <returns>List of drinks.</returns>
         public async Task<IEnumerable<Drink>> GetAllByBrandAsync(int brandId)
         {
-            _logger.LogDebug($"Called GetAllByBrandAsync() with brandId: {brandId}");
+            if (brandId <= 0) throw new ArgumentOutOfRangeException(nameof(brandId));
+
+            _logger.LogDebug("GetAllByBrandAsync called with brandId: {BrandId}", brandId);
 
             if (!await _brandRepository.ExistsAsync(brandId))
             {
-                _logger.LogWarning($"Brand with id {brandId} does not exist.");
+                _logger.LogWarning("Brand with id {BrandId} does not exist", brandId);
                 return Enumerable.Empty<Drink>();
             }
 
             return await _drinksRepository.GetAllByBrandAsync(brandId);
         }
-    }
 
+        public async Task AddAsync(Drink drink)
+        {
+            if (drink == null) throw new ArgumentNullException(nameof(drink));
+
+            _logger.LogDebug("AddAsync called for drink title: {Title}", drink.Title);
+
+            if (!await _brandRepository.ExistsAsync(drink.BrandId))
+            {
+                throw new InvalidOperationException($"Brand with id {drink.BrandId} does not exist.");
+            }
+
+            await _drinksRepository.CreateDrink(drink);
+        }
+
+        public async Task UpdateAsync(Drink drink)
+        {
+            if (drink == null) throw new ArgumentNullException(nameof(drink));
+            if (drink.ItemId <= 0) throw new ArgumentOutOfRangeException(nameof(drink.ItemId));
+
+            _logger.LogDebug("UpdateAsync called for drink id: {DrinkId}", drink.ItemId);
+
+            if (!await _brandRepository.ExistsAsync(drink.BrandId))
+            {
+                throw new InvalidOperationException($"Brand with id {drink.BrandId} does not exist.");
+            }
+
+            var existingDrink = await _drinksRepository.GetDrinkAsync(drink.ItemId);
+            if (existingDrink == null)
+            {
+                throw new KeyNotFoundException($"Drink with id {drink.ItemId} does not exist.");
+            }
+
+            await _drinksRepository.EditDrink(drink);
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id));
+
+            _logger.LogDebug("DeleteAsync called for drink id: {DrinkId}", id);
+
+            var existingDrink = await _drinksRepository.GetDrinkAsync(id);
+            if (existingDrink == null)
+            {
+                throw new KeyNotFoundException($"Drink with id {id} does not exist.");
+            }
+
+            await _drinksRepository.RemoveDrink(existingDrink);
+        }
+
+        public async Task BulkUpsertAsync(IEnumerable<Drink> drinks)
+        {
+            if (drinks == null) throw new ArgumentNullException(nameof(drinks));
+
+            var drinkList = drinks.ToList();
+            _logger.LogDebug("BulkUpsertAsync called for {Count} drinks", drinkList.Count);
+
+            if (drinkList.Count == 0)
+            {
+                return;
+            }
+
+            var brandIds = drinkList.Select(d => d.BrandId).Distinct().ToList();
+            foreach (var brandId in brandIds)
+            {
+                if (!await _brandRepository.ExistsAsync(brandId))
+                {
+                    throw new InvalidOperationException($"Brand with id {brandId} does not exist.");
+                }
+            }
+
+            await _drinksRepository.BulkUpsertAsync(drinkList);
+        }
+    }
 }
